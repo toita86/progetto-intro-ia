@@ -1,4 +1,10 @@
 # progetto-intro-ia
+- [Consegna del progetto](#consegna-del-progetto)
+- [Pipeline di pubblicazione](#pipeline-di-pubblicazione)
+- [Creazione di una Branch e Sincronizzazione con il Master](#creazione-di-una-branch-e-sincronizzazione-con-il-master)
+- [Struttura dei Commit](#struttura-dei-commit)
+## Consegna del Progetto
+Il file con la consegna del progetto può essere trovato [qui](https://github.com/toita86/progetto-intro-ia/blob/main/ProgettoIntroAI_2122_Coloring.pdf).
 ## Pipeline di pubblicazione 
 Come primo passo contollare in quale branch ci si trova con 
 ``` 
