@@ -99,3 +99,9 @@ Che se messo nella stessa cartella basta incollare questo:
 '.venv/lib/python3.10/site-packages/emnist/emnist.zip'
 ```
 Ed voilà tutto dovrebbe funzionare.
+
+>**Se vengono installate altre dipendenze** utlizzare il comando 
+>```
+>pip freeze > requirements.txt
+>```
+>per rigenerare il file con le nuove dipendenze.
