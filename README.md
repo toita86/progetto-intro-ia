@@ -3,6 +3,7 @@
 - [Pipeline di pubblicazione](#pipeline-di-pubblicazione)
 - [Creazione di una Branch e Sincronizzazione con il Master](#creazione-di-una-branch-e-sincronizzazione-con-il-master)
 - [Struttura dei Commit](#struttura-dei-commit)
+- [Set up del virtual environment](#set-up-del-virtual-environment)
 ## Consegna del Progetto
 Il file con la consegna del progetto può essere trovato [qui](https://github.com/toita86/progetto-intro-ia/blob/main/ProgettoIntroAI_2122_Coloring.pdf).
 ## Pipeline di pubblicazione 
@@ -75,3 +76,26 @@ Ad esempio:
   Cerca di mantenere i commit atomici, cioè con una singola funzionalità o correzione per commit.
   Questo rende più semplice la gestione delle modifiche e il roll-back se necessario.
   Per ogni singola funzionalità si crea un commit poi il push può essere fatto alla fine.
+## Set up del virtual environment
+creare l'ambiente virtuale usando il seguente comando:
+
+  ```
+  pip install -r requirements.txt
+  ```
+Questo comando installerà tutte le dipendenze del progetto elencate nel file requirements.txt nel loro ambiente virtuale.
+
+Per qualche motivo il comando `pip install emnist` non scaricherà nulla perciò dopo aver scaricato
+a mano il dataset da [qui](https://drive.google.com/uc?id=1R0blrtCsGEVLjVL3eijHMxrwahRUDK26).
+
+Mettere il file `emnist.zip` nella directory `.venv/lib/python3.10/site-packages/emnist`
+
+Occore andare a modificare il file `__init__.py` che si trova qui:
+```
+.venv/lib/python3.10/site-packages/emnist/` 
+```
+ed modificare la voce `CACHE_FILE_PATH` con la path relativa del file che avete appena spostato nella cartella.
+Che se messo nella stessa cartella basta incollare questo:
+```
+'.venv/lib/python3.10/site-packages/emnist/emnist.zip'
+```
+Ed voilà tutto dovrebbe funzionare.
