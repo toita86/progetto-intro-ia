@@ -90,18 +90,18 @@ a mano il dataset da [qui](https://drive.google.com/uc?id=1R0blrtCsGEVLjVL3eijHM
 Mettere il file `emnist.zip` nella directory `.venv/lib/python3.10/site-packages/emnist`
 
 Occore andare a modificare il file `__init__.py` che si trova qui:
-```
-.venv/lib/python3.10/site-packages/emnist/` 
-```
+  ```
+  .venv/lib/python3.10/site-packages/emnist/` 
+  ```
 ed modificare la voce `CACHE_FILE_PATH` con la path relativa del file che avete appena spostato nella cartella.
 Che se messo nella stessa cartella basta incollare questo:
-```
-'.venv/lib/python3.10/site-packages/emnist/emnist.zip'
-```
+  ```
+  '.venv/lib/python3.10/site-packages/emnist/emnist.zip'
+  ```
 Ed voilà tutto dovrebbe funzionare.
 
 >**Se vengono installate altre dipendenze** utlizzare il comando 
->```
->pip freeze > requirements.txt
->```
+>  ```
+>  pip freeze > requirements.txt
+>  ```
 >per rigenerare il file con le nuove dipendenze.
