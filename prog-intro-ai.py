@@ -12,18 +12,6 @@ from sklearn.metrics import classification_report
 
 list_datasets()
 
-'''
-# print some images from the dataset to test
-import matplotlib.pyplot as plt
-from emnist import extract_training_samples
-images, labels = extract_training_samples('letters')
-for i in range(100):
-    plt.subplot(10, 10, i+1)
-    plt.axis('off')
-    plt.imshow(images[i], cmap='gray')
-plt.show()
-'''
-
 # Import the necessary functions from the emnist library
 from emnist import extract_training_samples
 from emnist import extract_test_samples
@@ -103,149 +91,78 @@ def filterDataset(X_data, y_data):
     assert new_data_index == new_X_data.shape[0]
     return (new_X_data, new_y_data)
 
-# Extract the training and test samples from the EMNIST dataset
-X_train, y_train = extract_training_samples('balanced')
-X_test, y_test = extract_test_samples('balanced')
+def create_model():
+    seq_lett_model = keras.Sequential([
+        keras.layers.Conv2D(32, (3, 3), activation='relu', input_shape=(28, 28, 1)),  # Input shape: 28x28 pixels, 1 color channel
+        keras.layers.MaxPooling2D((2, 2)),
+        keras.layers.Conv2D(128, (3, 3), activation='relu'),
+        keras.layers.MaxPooling2D((2, 2)),
+        keras.layers.Conv2D(128, (3, 3), activation='relu'),
+        keras.layers.Flatten(),
+        keras.layers.Dense(64, activation='relu'),
+        keras.layers.Dense(4, activation='softmax')  # Output layer for 4 letters
+    ])
+    seq_lett_model.summary()
+    return seq_lett_model
 
-# Filter the training and test datasets
-(X_train, y_train_library) = filterDataset(X_train, y_train)
-(X_test, y_test) = filterDataset(X_test, y_test)
+def model_statistics(training_operation, X_test, y_test, seq_lett_model):
+    # Plot training & validation accuracy values
+    plt.plot(training_operation.history['accuracy'])
+    plt.plot(training_operation.history['val_accuracy'])
+    plt.title('Model accuracy')
+    plt.ylabel('Accuracy')
+    plt.xlabel('Epoch')
+    plt.legend(['Train', 'Val'], loc='upper left')
+    plt.show()
 
-# Remodulate the labels of the training and test datasets
-y_train_library = remodulate(y_train_library)
-y_test = remodulate(y_test)
+    # Plot training & validation loss values
+    plt.plot(training_operation.history['loss'])
+    plt.plot(training_operation.history['val_loss'])
+    plt.title('Model loss')
+    plt.ylabel('Loss')
+    plt.xlabel('Epoch')
+    plt.legend(['Train', 'Val'], loc='upper left')
+    plt.show()
 
-# Normalize the training and test datasets
-X_train = X_train.astype("float32") / 255
-X_test = X_test.astype("float32") / 255
+    # Evaluate the model's performance on the test data. 
+    # The evaluate function returns the loss value and metrics values for the model in test mode.
+    # We set verbose=0 to avoid logging the detailed output during the evaluation.
+    loss, accuracy =  seq_lett_model.evaluate(X_test, y_test, verbose=0)
 
-# Print the shape of the training data
-print(X_train.shape)
+    # Print the loss value that the model achieved on the test data.
+    # The loss value represents how well the model can estimate the target variables. Lower values are better.
+    print("Test loss:", loss)
 
-# Reshape the training data from 3D to 2D. The new shape is (number of samples, image width * image height)
-X_train = X_train.reshape((-1, 28, 28, 1))
+    # Print the accuracy that the model achieved on the test data.
+    # The accuracy is the proportion of correct predictions that the model made. Higher values are better.
+    print("Test accuracy:", accuracy)
 
-# Reshape the test data from 3D to 2D. The new shape is (number of samples, image width * image height)
-X_test = X_test.reshape((-1, 28, 28, 1))
+    # Use the trained model to make predictions on the test data.
+    # The predict function returns the output of the last layer in the model, which in this case is the output of the softmax layer.
+    y_pred = seq_lett_model.predict(X_test)
 
-# Print the new shape of the training data
-print(X_train.shape)
+    # The output of the softmax layer is a vector of probabilities for each class. 
+    # We use the argmax function to find the index of the maximum probability, which gives us the predicted class.
+    y_pred = np.argmax(y_pred, axis = 1)
 
-# Print the shape of the test data
-print(X_test.shape)
+    # Compute the confusion matrix to evaluate the accuracy of the classification.
+    # The confusion matrix is a table that is often used to describe the performance of a classification model.
+    # Each row of the matrix represents the instances in a predicted class, while each column represents the instances in an actual class.
+    # The 'normalize' parameter is set to 'true', which means the confusion matrix will be normalized by row (i.e., by the number of samples in each class).
+    confusionMatrix = confusion_matrix(y_test, y_pred, normalize = 'true')
 
-'''
-# Initialize a Sequential model
-seq_lett_model = keras.Sequential()
+    # Create a ConfusionMatrixDisplay object from the confusion matrix.
+    # The display_labels parameter is set to the names of the classes.
+    disp = ConfusionMatrixDisplay(confusion_matrix = confusionMatrix, display_labels = ['T','B','Y','G'])
 
-# Add an Input layer to the model. This layer specifies the shape of the input data (784 features).
-seq_lett_model.add(keras.Input(shape=(784,)))
+    # Plot the confusion matrix.
+    disp.plot()
 
-# Add a Dense layer to the model with 256 neurons and a ReLU activation function.
-# Dense layers are fully connected layers, meaning all the neurons in a layer are connected to those in the next layer.
-seq_lett_model.add(keras.layers.Dense(512, activation='relu'))
+    # Display the plot.
+    plt.show()
 
-# Add another Dense layer to the model with 128 neurons and a ReLU activation function.
-seq_lett_model.add(keras.layers.Dense(256, activation='relu'))
-
-# Add a final Dense layer with 4 neurons (because we have 4 letters to detect) and a softmax activation function.
-# The softmax function is often used in the final layer of a neural network-based classifier.
-seq_lett_model.add(keras.layers.Dense(4, activation='softmax'))
-
-# Print a summary of the model, including the number of parameters and the shape of the output at each layer.
-'''
-seq_lett_model = keras.Sequential([
-    keras.layers.Conv2D(32, (3, 3), activation='relu', input_shape=(28, 28, 1)),  # Input shape: 28x28 pixels, 1 color channel
-    keras.layers.MaxPooling2D((2, 2)),
-    keras.layers.Conv2D(64, (3, 3), activation='relu'),
-    keras.layers.MaxPooling2D((2, 2)),
-    keras.layers.Conv2D(64, (3, 3), activation='relu'),
-    keras.layers.Flatten(),
-    keras.layers.Dense(64, activation='relu'),
-    keras.layers.Dense(4, activation='softmax')  # Output layer for 4 letters
-])
-
-seq_lett_model.summary()
-
-# Set the batch size. This is the number of samples that will be passed through the network at once.
-batch_size = 384
-
-# Set the number of epochs to 7. An epoch is one complete pass through the entire training dataset.
-epochs = 10
-
-# Compile the model. 
-# We use the sparse_categorical_crossentropy loss function, which is suitable for multi-class classification problems.
-# The optimizer is set to 'adam', which is a popular choice due to its efficiency and good performance on a wide range of problems.
-# We also specify that we want to evaluate the model's accuracy during training.
-seq_lett_model.compile(loss="sparse_categorical_crossentropy", optimizer="adam", metrics=["accuracy"])
-
-# Fit the model to the training data. 
-# We also specify a validation split of 0.1, meaning that 10% of the training data will be used as validation data.
-# The model's performance is evaluated on this validation data at the end of each epoch.
-training_operation = seq_lett_model.fit(X_train, y_train_library, batch_size=batch_size, epochs=epochs, validation_split=0.1)
-
-# Save the trained model to a file so that it can be loaded later for making predictions or continuing training.
-seq_lett_model.save('seq_lett_model.keras')
-
-# Plot training & validation accuracy values
-plt.plot(training_operation.history['accuracy'])
-plt.plot(training_operation.history['val_accuracy'])
-plt.title('Model accuracy')
-plt.ylabel('Accuracy')
-plt.xlabel('Epoch')
-plt.legend(['Train', 'Val'], loc='upper left')
-plt.show()
-
-# Plot training & validation loss values
-plt.plot(training_operation.history['loss'])
-plt.plot(training_operation.history['val_loss'])
-plt.title('Model loss')
-plt.ylabel('Loss')
-plt.xlabel('Epoch')
-plt.legend(['Train', 'Val'], loc='upper left')
-plt.show()
-
-# Evaluate the model's performance on the test data. 
-# The evaluate function returns the loss value and metrics values for the model in test mode.
-# We set verbose=0 to avoid logging the detailed output during the evaluation.
-loss, accuracy =  seq_lett_model.evaluate(X_test, y_test, verbose=0)
-
-# Print the loss value that the model achieved on the test data.
-# The loss value represents how well the model can estimate the target variables. Lower values are better.
-print("Test loss:", loss)
-
-# Print the accuracy that the model achieved on the test data.
-# The accuracy is the proportion of correct predictions that the model made. Higher values are better.
-print("Test accuracy:", accuracy)
-
-# Use the trained model to make predictions on the test data.
-# The predict function returns the output of the last layer in the model, which in this case is the output of the softmax layer.
-y_pred = seq_lett_model.predict(X_test)
-
-# The output of the softmax layer is a vector of probabilities for each class. 
-# We use the argmax function to find the index of the maximum probability, which gives us the predicted class.
-y_pred = np.argmax(y_pred, axis = 1)
-
-# Compute the confusion matrix to evaluate the accuracy of the classification.
-# The confusion matrix is a table that is often used to describe the performance of a classification model.
-# Each row of the matrix represents the instances in a predicted class, while each column represents the instances in an actual class.
-# The 'normalize' parameter is set to 'true', which means the confusion matrix will be normalized by row (i.e., by the number of samples in each class).
-confusionMatrix = confusion_matrix(y_test, y_pred, normalize = 'true')
-
-# Create a ConfusionMatrixDisplay object from the confusion matrix.
-# The display_labels parameter is set to the names of the classes.
-disp = ConfusionMatrixDisplay(confusion_matrix = confusionMatrix, display_labels = ['T','B','Y','G'])
-
-# Plot the confusion matrix.
-disp.plot()
-
-# Display the plot.
-plt.show()
-
-from sklearn.metrics import classification_report
-print(classification_report(y_test, y_pred))
-
-os.system("find './manipulated_grids/' -name 'ROI_*' -exec rm {} \;")
+    from sklearn.metrics import classification_report
+    print(classification_report(y_test, y_pred))
 
 def capture_image_from_webcam():
     cap = cv2.VideoCapture(0)
@@ -266,7 +183,7 @@ def capture_image_from_webcam():
 def save_image(image, filename):
     cv2.imwrite(filename, image)
 
-def preprocess_image(image):
+def preprocess_image_tresh(image):
     gray = cv2.cvtColor(image, cv2.COLOR_BGR2GRAY)
     blur = cv2.GaussianBlur(gray, (5,5), 0)
     thresh = cv2.adaptiveThreshold(blur, 255, 1, 1, 11, 2)
@@ -281,7 +198,7 @@ def find_largest_contour(contours):
             largest_contour = i
     return largest_contour
 
-def extract_ROIs(contours, original):
+def extract_ROIs(contours, original, MIN_CONTOUR_AREA=70*60):
     ROIs = []
     yt = None  # y-coordinate of the previous ROI
     n = 1  # count of ROIs with the same y-coordinate
@@ -298,21 +215,6 @@ def extract_ROIs(contours, original):
             ROIs.append(ROI)
     return ROIs, n
 
-MIN_CONTOUR_AREA = 70 * 60
-
-frame = capture_image_from_webcam()
-timestamp = datetime.datetime.now().strftime('%Y-%m-%d_%H-%M-%S')
-save_image(frame, f'./grids/grid_{timestamp}.png')
-
-image = cv2.imread(f'./grids/grid_{timestamp}.png')
-thresh = preprocess_image(image)
-contours, _ = cv2.findContours(thresh, cv2.RETR_TREE, cv2.CHAIN_APPROX_SIMPLE)
-largest_contour = find_largest_contour(contours)
-ROIs, n = extract_ROIs(contours, image.copy())
-
-for i, ROI in enumerate(ROIs):
-    save_image(ROI, f'./manipulated_grids/ROI_{i}.png')
-
 def preprocess_image(image_path):
     im = cv2.imread(image_path)
     if im is None:
@@ -328,22 +230,103 @@ def preprocess_image(image_path):
     im = tf.expand_dims(im, axis=0)
     return im
 
-seq_lett_model = tf.keras.models.load_model('seq_lett_model.keras')
+def main():
+    # Extract the training and test samples from the EMNIST dataset
+    X_train, y_train = extract_training_samples('balanced')
+    X_test, y_test = extract_test_samples('balanced')
 
-l = []
-for i in range(1, len(ROIs)):
-    im = preprocess_image(f"./manipulated_grids/ROI_{i}.png")
-    if im is not None:
-        prediction = seq_lett_model.predict(im)
-        max = np.where(prediction == np.amax(prediction))
-        l.append(int(max[1][0]))
+    # Filter the training and test datasets
+    (X_train, y_train_library) = filterDataset(X_train, y_train)
+    (X_test, y_test) = filterDataset(X_test, y_test)
 
-nrow = len(l) // n if n < len(l) else n // len(l)
-nrow = int(nrow)
+    # Remodulate the labels of the training and test datasets
+    y_train_library = remodulate(y_train_library)
+    y_test = remodulate(y_test)
 
-mat = np.array(list(reversed(l)))
-grid = mat.reshape(nrow, n)
+    # Normalize the training and test datasets
+    X_train = X_train.astype("float32") / 255
+    X_test = X_test.astype("float32") / 255
 
-label_mapping = {0: 'T', 1: 'B', 2: 'Y', 3: 'G'}
-show = np.vectorize(label_mapping.get)(grid)
-print(show)
+    # Print the shape of the training data
+    print(X_train.shape)
+
+    # Reshape the training data from 3D to 2D. The new shape is (number of samples, image width * image height)
+    X_train = X_train.reshape((-1, 28, 28, 1))
+
+    # Reshape the test data from 3D to 2D. The new shape is (number of samples, image width * image height)
+    X_test = X_test.reshape((-1, 28, 28, 1))
+
+    # Print the new shape of the training data
+    print(X_train.shape)
+
+    # Print the shape of the test data
+    print(X_test.shape)
+
+    seq_lett_model = create_model()
+
+    # Set the batch size. This is the number of samples that will be passed through the network at once.
+    batch_size = 384
+
+    # Set the number of epochs to 7. An epoch is one complete pass through the entire training dataset.
+    epochs = 10
+
+    # Compile the model. 
+    # We use the sparse_categorical_crossentropy loss function, which is suitable for multi-class classification problems.
+    # The optimizer is set to 'adam', which is a popular choice due to its efficiency and good performance on a wide range of problems.
+    # We also specify that we want to evaluate the model's accuracy during training.
+    seq_lett_model.compile(loss="sparse_categorical_crossentropy", optimizer="adam", metrics=["accuracy"])
+
+    # Fit the model to the training data. 
+    # We also specify a validation split of 0.1, meaning that 10% of the training data will be used as validation data.
+    # The model's performance is evaluated on this validation data at the end of each epoch.
+    early_stopping = keras.callbacks.EarlyStopping(monitor='val_loss', patience=3, restore_best_weights=True)
+    training_operation = seq_lett_model.fit(
+        X_train, y_train_library, 
+        batch_size=batch_size, 
+        epochs=epochs, 
+        validation_split=0.1,
+        callbacks=[early_stopping])
+
+    # Save the trained model to a file so that it can be loaded later for making predictions or continuing training.
+    seq_lett_model.save('seq_lett_model.keras')
+
+    model_statistics(training_operation, X_test, y_test, seq_lett_model)
+
+    os.system("find './manipulated_grids/' -name 'ROI_*' -exec rm {} \;")
+
+    MIN_CONTOUR_AREA = 70 * 60
+
+    frame = capture_image_from_webcam()
+    timestamp = datetime.datetime.now().strftime('%Y-%m-%d_%H-%M-%S')
+    save_image(frame, f'./grids/grid_{timestamp}.png')
+
+    image = cv2.imread(f'./grids/grid_{timestamp}.png')
+    thresh = preprocess_image_tresh(image)
+    contours, _ = cv2.findContours(thresh, cv2.RETR_TREE, cv2.CHAIN_APPROX_SIMPLE)
+    largest_contour = find_largest_contour(contours)
+    ROIs, n = extract_ROIs(contours, image.copy(), MIN_CONTOUR_AREA)
+
+    for i, ROI in enumerate(ROIs):
+        save_image(ROI, f'./manipulated_grids/ROI_{i}.png')
+
+    l = []
+    for i in range(1, len(ROIs)):
+        im = preprocess_image(f"./manipulated_grids/ROI_{i}.png")
+        if im is not None:
+            prediction = seq_lett_model.predict(im)
+            max = np.where(prediction == np.amax(prediction))
+            l.append(int(max[1][0]))
+
+    nrow = len(l) // n if n < len(l) else n // len(l)
+    nrow = int(nrow)
+
+    mat = np.array(list(reversed(l)))
+    grid = mat.reshape(nrow, n)
+
+    label_mapping = {0: 'T', 1: 'B', 2: 'Y', 3: 'G'}
+    show = np.vectorize(label_mapping.get)(grid)
+    print(show)
+
+
+if __name__ == "__main__":
+    main()
