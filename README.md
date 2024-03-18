@@ -7,6 +7,8 @@
 ## Consegna del Progetto
 Il file con la consegna del progetto può essere trovato [qui](https://github.com/toita86/progetto-intro-ia/blob/main/ProgettoIntroAI_2122_Coloring.pdf).
 ## Pipeline di pubblicazione 
+**Prima di tutto** pulire gli output e resettare il `venv`  
+
 Come primo passo contollare in quale branch ci si trova con 
 ``` 
 git status 
