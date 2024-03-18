@@ -298,9 +298,14 @@ def main():
 
     frame = capture_image_from_webcam()
     timestamp = datetime.datetime.now().strftime('%Y-%m-%d_%H-%M-%S')
-    save_image(frame, f'./grids/grid_{timestamp}.png')
+    image_path = f'./grids/grid_{timestamp}.png'
 
-    image = cv2.imread(f'./grids/grid_{timestamp}.png')
+    save_image(frame, image_path)
+
+    image = cv2.imread(image_path)
+    if image is None:
+        print(f"Error loading image: image_path")
+        return
     thresh = preprocess_image_tresh(image)
     contours, _ = cv2.findContours(thresh, cv2.RETR_TREE, cv2.CHAIN_APPROX_SIMPLE)
     largest_contour = find_largest_contour(contours)
