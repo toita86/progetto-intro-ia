@@ -10,8 +10,6 @@ from sklearn.metrics import confusion_matrix
 from sklearn.metrics import ConfusionMatrixDisplay
 from sklearn.metrics import classification_report
 
-list_datasets()
-
 # Import the necessary functions from the emnist library
 from emnist import extract_training_samples
 from emnist import extract_test_samples
@@ -93,13 +91,15 @@ def filterDataset(X_data, y_data):
 
 def create_model():
     seq_lett_model = keras.Sequential([
-        keras.layers.Conv2D(32, (3, 3), activation='relu', input_shape=(28, 28, 1)),  # Input shape: 28x28 pixels, 1 color channel
+        keras.Input(shape=(28, 28, 1)), # Input shape: 28x28 pixels, 1 color channel
+        keras.layers.Conv2D(28, (3, 3), activation='relu'),
         keras.layers.MaxPooling2D((2, 2)),
         keras.layers.Conv2D(128, (3, 3), activation='relu'),
         keras.layers.MaxPooling2D((2, 2)),
         keras.layers.Conv2D(128, (3, 3), activation='relu'),
         keras.layers.Flatten(),
-        keras.layers.Dense(64, activation='relu'),
+        keras.layers.Dense(128, activation='relu'),
+        keras.layers.Dropout(0.5),
         keras.layers.Dense(4, activation='softmax')  # Output layer for 4 letters
     ])
     seq_lett_model.summary()
@@ -164,6 +164,68 @@ def model_statistics(training_operation, X_test, y_test, seq_lett_model):
     from sklearn.metrics import classification_report
     print(classification_report(y_test, y_pred))
 
+def train_model():
+# Extract the training and test samples from the EMNIST dataset
+    X_train, y_train = extract_training_samples('balanced')
+    X_test, y_test = extract_test_samples('balanced')
+
+    # Filter the training and test datasets
+    (X_train, y_train_library) = filterDataset(X_train, y_train)
+    (X_test, y_test) = filterDataset(X_test, y_test)
+
+    # Remodulate the labels of the training and test datasets
+    y_train_library = remodulate(y_train_library)
+    y_test = remodulate(y_test)
+
+    # Normalize the training and test datasets
+    X_train = X_train.astype("float32") / 255
+    X_test = X_test.astype("float32") / 255
+
+    # Print the shape of the training data
+    print(X_train.shape)
+
+    # Reshape the training data from 3D to 2D. The new shape is (number of samples, image width * image height)
+    X_train = X_train.reshape((-1, 28, 28, 1))
+
+    # Reshape the test data from 3D to 2D. The new shape is (number of samples, image width * image height)
+    X_test = X_test.reshape((-1, 28, 28, 1))
+
+    # Print the new shape of the training data
+    print(X_train.shape)
+
+    # Print the shape of the test data
+    print(X_test.shape)
+
+    seq_lett_model = create_model()
+
+    # Set the batch size. This is the number of samples that will be passed through the network at once.
+    batch_size = 384
+
+    # Set the number of epochs to 7. An epoch is one complete pass through the entire training dataset.
+    epochs = 15
+
+    # Compile the model. 
+    # We use the sparse_categorical_crossentropy loss function, which is suitable for multi-class classification problems.
+    # The optimizer is set to 'adam', which is a popular choice due to its efficiency and good performance on a wide range of problems.
+    # We also specify that we want to evaluate the model's accuracy during training.
+    seq_lett_model.compile(loss="sparse_categorical_crossentropy", optimizer="adam", metrics=["accuracy"])
+
+    # Fit the model to the training data. 
+    # We also specify a validation split of 0.1, meaning that 10% of the training data will be used as validation data.
+    # The model's performance is evaluated on this validation data at the end of each epoch.
+    early_stopping = keras.callbacks.EarlyStopping(monitor='val_loss', patience=3, restore_best_weights=True)
+    training_operation = seq_lett_model.fit(
+        X_train, y_train_library, 
+        batch_size=batch_size, 
+        epochs=epochs, 
+        validation_split=0.1,
+        callbacks=[early_stopping])
+
+    # Save the trained model to a file so that it can be loaded later for making predictions or continuing training.
+    seq_lett_model.save('seq_lett_model.keras')
+
+
+
 def capture_image_from_webcam():
     cap = cv2.VideoCapture(0)
     if not cap.isOpened():
@@ -185,8 +247,8 @@ def save_image(image, filename):
 
 def preprocess_image_tresh(image):
     gray = cv2.cvtColor(image, cv2.COLOR_BGR2GRAY)
-    blur = cv2.GaussianBlur(gray, (5,5), 0)
-    thresh = cv2.adaptiveThreshold(blur, 255, 1, 1, 11, 2)
+    blur = cv2.GaussianBlur(gray, (7,7), 0)
+    thresh = cv2.adaptiveThreshold(blur, 255, 1, 1, 15, 2)
     return thresh
 
 def find_largest_contour(contours):
@@ -198,7 +260,8 @@ def find_largest_contour(contours):
             largest_contour = i
     return largest_contour
 
-def extract_ROIs(contours, original, MIN_CONTOUR_AREA=70*60):
+def extract_ROIs(contours, original, coefficient):
+    MIN_CONTOUR_AREA = coefficient * original.shape[0] * original.shape[1]
     ROIs = []
     yt = None  # y-coordinate of the previous ROI
     n = 1  # count of ROIs with the same y-coordinate
@@ -231,81 +294,26 @@ def preprocess_image(image_path):
     return im
 
 def main():
+    list_datasets()
     #ask user terminale input for training model
     train_flag  = input("Do you want to train the model? (y/n): ")  
     if train_flag == 'y':
-        # Extract the training and test samples from the EMNIST dataset
-        X_train, y_train = extract_training_samples('balanced')
-        X_test, y_test = extract_test_samples('balanced')
-
-        # Filter the training and test datasets
-        (X_train, y_train_library) = filterDataset(X_train, y_train)
-        (X_test, y_test) = filterDataset(X_test, y_test)
-
-        # Remodulate the labels of the training and test datasets
-        y_train_library = remodulate(y_train_library)
-        y_test = remodulate(y_test)
-
-        # Normalize the training and test datasets
-        X_train = X_train.astype("float32") / 255
-        X_test = X_test.astype("float32") / 255
-
-        # Print the shape of the training data
-        print(X_train.shape)
-
-        # Reshape the training data from 3D to 2D. The new shape is (number of samples, image width * image height)
-        X_train = X_train.reshape((-1, 28, 28, 1))
-
-        # Reshape the test data from 3D to 2D. The new shape is (number of samples, image width * image height)
-        X_test = X_test.reshape((-1, 28, 28, 1))
-
-        # Print the new shape of the training data
-        print(X_train.shape)
-
-        # Print the shape of the test data
-        print(X_test.shape)
-
-        seq_lett_model = create_model()
-
-        # Set the batch size. This is the number of samples that will be passed through the network at once.
-        batch_size = 384
-
-        # Set the number of epochs to 7. An epoch is one complete pass through the entire training dataset.
-        epochs = 10
-
-        # Compile the model. 
-        # We use the sparse_categorical_crossentropy loss function, which is suitable for multi-class classification problems.
-        # The optimizer is set to 'adam', which is a popular choice due to its efficiency and good performance on a wide range of problems.
-        # We also specify that we want to evaluate the model's accuracy during training.
-        seq_lett_model.compile(loss="sparse_categorical_crossentropy", optimizer="adam", metrics=["accuracy"])
-
-        # Fit the model to the training data. 
-        # We also specify a validation split of 0.1, meaning that 10% of the training data will be used as validation data.
-        # The model's performance is evaluated on this validation data at the end of each epoch.
-        early_stopping = keras.callbacks.EarlyStopping(monitor='val_loss', patience=3, restore_best_weights=True)
-        training_operation = seq_lett_model.fit(
-            X_train, y_train_library, 
-            batch_size=batch_size, 
-            epochs=epochs, 
-            validation_split=0.1,
-            callbacks=[early_stopping])
-
-        # Save the trained model to a file so that it can be loaded later for making predictions or continuing training.
-        seq_lett_model.save('seq_lett_model.keras')
-
-        model_statistics(training_operation, X_test, y_test, seq_lett_model)
+        train_model()
     
     seq_lett_model = keras.models.load_model('seq_lett_model.keras')
 
     os.system("find './manipulated_grids/' -name 'ROI_*' -exec rm {} \;")
 
-    MIN_CONTOUR_AREA = 70 * 60
+    # Ask user to take a picture of the grid or if they want to use a default image from file explorer
+    if input("Do you want to take a picture of the grid? If you press n you have to pick an image from your filesystem (y/n): ") == 'y':
+        frame = capture_image_from_webcam()
+        timestamp = datetime.datetime.now().strftime('%Y-%m-%d_%H-%M-%S')
+        image_path = f'./grids/grid_{timestamp}.png'
 
-    frame = capture_image_from_webcam()
-    timestamp = datetime.datetime.now().strftime('%Y-%m-%d_%H-%M-%S')
-    image_path = f'./grids/grid_{timestamp}.png'
-
-    save_image(frame, image_path)
+        save_image(frame, image_path)
+    else:
+        path = input("Enter the name of the image: ")
+        image_path = f'./grids/{path}.png'
 
     image = cv2.imread(image_path)
     if image is None:
@@ -314,7 +322,8 @@ def main():
     thresh = preprocess_image_tresh(image)
     contours, _ = cv2.findContours(thresh, cv2.RETR_TREE, cv2.CHAIN_APPROX_SIMPLE)
     largest_contour = find_largest_contour(contours)
-    ROIs, n = extract_ROIs(contours, image.copy(), MIN_CONTOUR_AREA)
+    #dimension_coeff = determine_min_contour_area_coefficient(image_path)
+    ROIs, n = extract_ROIs(contours, image.copy(), 0.03)
 
     for i, ROI in enumerate(ROIs):
         save_image(ROI, f'./manipulated_grids/ROI_{i}.png')
@@ -336,7 +345,6 @@ def main():
     label_mapping = {0: 'T', 1: 'B', 2: 'Y', 3: 'G'}
     show = np.vectorize(label_mapping.get)(grid)
     print(show)
-
 
 if __name__ == "__main__":
     main()
