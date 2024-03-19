@@ -231,66 +231,71 @@ def preprocess_image(image_path):
     return im
 
 def main():
-    # Extract the training and test samples from the EMNIST dataset
-    X_train, y_train = extract_training_samples('balanced')
-    X_test, y_test = extract_test_samples('balanced')
+    #ask user terminale input for training model
+    train_flag  = input("Do you want to train the model? (y/n): ")  
+    if train_flag == 'y':
+        # Extract the training and test samples from the EMNIST dataset
+        X_train, y_train = extract_training_samples('balanced')
+        X_test, y_test = extract_test_samples('balanced')
 
-    # Filter the training and test datasets
-    (X_train, y_train_library) = filterDataset(X_train, y_train)
-    (X_test, y_test) = filterDataset(X_test, y_test)
+        # Filter the training and test datasets
+        (X_train, y_train_library) = filterDataset(X_train, y_train)
+        (X_test, y_test) = filterDataset(X_test, y_test)
 
-    # Remodulate the labels of the training and test datasets
-    y_train_library = remodulate(y_train_library)
-    y_test = remodulate(y_test)
+        # Remodulate the labels of the training and test datasets
+        y_train_library = remodulate(y_train_library)
+        y_test = remodulate(y_test)
 
-    # Normalize the training and test datasets
-    X_train = X_train.astype("float32") / 255
-    X_test = X_test.astype("float32") / 255
+        # Normalize the training and test datasets
+        X_train = X_train.astype("float32") / 255
+        X_test = X_test.astype("float32") / 255
 
-    # Print the shape of the training data
-    print(X_train.shape)
+        # Print the shape of the training data
+        print(X_train.shape)
 
-    # Reshape the training data from 3D to 2D. The new shape is (number of samples, image width * image height)
-    X_train = X_train.reshape((-1, 28, 28, 1))
+        # Reshape the training data from 3D to 2D. The new shape is (number of samples, image width * image height)
+        X_train = X_train.reshape((-1, 28, 28, 1))
 
-    # Reshape the test data from 3D to 2D. The new shape is (number of samples, image width * image height)
-    X_test = X_test.reshape((-1, 28, 28, 1))
+        # Reshape the test data from 3D to 2D. The new shape is (number of samples, image width * image height)
+        X_test = X_test.reshape((-1, 28, 28, 1))
 
-    # Print the new shape of the training data
-    print(X_train.shape)
+        # Print the new shape of the training data
+        print(X_train.shape)
 
-    # Print the shape of the test data
-    print(X_test.shape)
+        # Print the shape of the test data
+        print(X_test.shape)
 
-    seq_lett_model = create_model()
+        seq_lett_model = create_model()
 
-    # Set the batch size. This is the number of samples that will be passed through the network at once.
-    batch_size = 384
+        # Set the batch size. This is the number of samples that will be passed through the network at once.
+        batch_size = 384
 
-    # Set the number of epochs to 7. An epoch is one complete pass through the entire training dataset.
-    epochs = 10
+        # Set the number of epochs to 7. An epoch is one complete pass through the entire training dataset.
+        epochs = 10
 
-    # Compile the model. 
-    # We use the sparse_categorical_crossentropy loss function, which is suitable for multi-class classification problems.
-    # The optimizer is set to 'adam', which is a popular choice due to its efficiency and good performance on a wide range of problems.
-    # We also specify that we want to evaluate the model's accuracy during training.
-    seq_lett_model.compile(loss="sparse_categorical_crossentropy", optimizer="adam", metrics=["accuracy"])
+        # Compile the model. 
+        # We use the sparse_categorical_crossentropy loss function, which is suitable for multi-class classification problems.
+        # The optimizer is set to 'adam', which is a popular choice due to its efficiency and good performance on a wide range of problems.
+        # We also specify that we want to evaluate the model's accuracy during training.
+        seq_lett_model.compile(loss="sparse_categorical_crossentropy", optimizer="adam", metrics=["accuracy"])
 
-    # Fit the model to the training data. 
-    # We also specify a validation split of 0.1, meaning that 10% of the training data will be used as validation data.
-    # The model's performance is evaluated on this validation data at the end of each epoch.
-    early_stopping = keras.callbacks.EarlyStopping(monitor='val_loss', patience=3, restore_best_weights=True)
-    training_operation = seq_lett_model.fit(
-        X_train, y_train_library, 
-        batch_size=batch_size, 
-        epochs=epochs, 
-        validation_split=0.1,
-        callbacks=[early_stopping])
+        # Fit the model to the training data. 
+        # We also specify a validation split of 0.1, meaning that 10% of the training data will be used as validation data.
+        # The model's performance is evaluated on this validation data at the end of each epoch.
+        early_stopping = keras.callbacks.EarlyStopping(monitor='val_loss', patience=3, restore_best_weights=True)
+        training_operation = seq_lett_model.fit(
+            X_train, y_train_library, 
+            batch_size=batch_size, 
+            epochs=epochs, 
+            validation_split=0.1,
+            callbacks=[early_stopping])
 
-    # Save the trained model to a file so that it can be loaded later for making predictions or continuing training.
-    seq_lett_model.save('seq_lett_model.keras')
+        # Save the trained model to a file so that it can be loaded later for making predictions or continuing training.
+        seq_lett_model.save('seq_lett_model.keras')
 
-    model_statistics(training_operation, X_test, y_test, seq_lett_model)
+        model_statistics(training_operation, X_test, y_test, seq_lett_model)
+    
+    seq_lett_model = keras.models.load_model('seq_lett_model.keras')
 
     os.system("find './manipulated_grids/' -name 'ROI_*' -exec rm {} \;")
 
