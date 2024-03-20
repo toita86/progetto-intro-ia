@@ -9,7 +9,9 @@ from tensorflow import keras
 from sklearn.metrics import confusion_matrix
 from sklearn.metrics import ConfusionMatrixDisplay
 from sklearn.metrics import classification_report
-from aima import Problem, Node, search #  Import aimacode from the aima-python library
+from utils import *
+from search import *
+#from aima import Problem, Node #  Import aimacode from the aima-python library
 from enum import Enum
 
 
@@ -148,10 +150,10 @@ def best_first_graph_search(problem, f, display=False):
     There is a subtlety: the line "f = memoize(f, 'f')" means that the f
     values will be cached on the nodes as they are computed. So after doing
     a best first search you can examine the f values of the path returned."""
-    f = search.memoize(f, 'f')
-    node = Node(problem.initial)
+    f = memoize(f, 'f')
+    node = Node(problem.INITIAL)
     #print("#COORDS0:", node.state.i, node.state.j, node.state.grid)
-    frontier = search.PriorityQueue('min', f)
+    frontier = PriorityQueue('min', f)
     frontier.append(node)
     lookup_frontier=set()
     lookup_frontier.add(id(node))
