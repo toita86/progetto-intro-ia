@@ -199,7 +199,7 @@ def train_model():
     seq_lett_model = create_model()
 
     # Set the batch size. This is the number of samples that will be passed through the network at once.
-    batch_size = 384
+    batch_size = 64
 
     # Set the number of epochs to 7. An epoch is one complete pass through the entire training dataset.
     epochs = 15
@@ -223,11 +223,17 @@ def train_model():
 
     # Save the trained model to a file so that it can be loaded later for making predictions or continuing training.
     seq_lett_model.save('seq_lett_model.keras')
-
-
+    return training_operation, X_test, y_test, seq_lett_model
 
 def capture_image_from_webcam():
-    cap = cv2.VideoCapture(0)
+    # Detect if the system is a mac or linux
+    if os.name == 'posix':
+        video_device = 0
+    else:
+        video_device = 1
+    cap = cv2.VideoCapture(video_device)
+    
+
     if not cap.isOpened():
         raise IOError("Cannot open webcam")
     while True:
@@ -245,11 +251,19 @@ def capture_image_from_webcam():
 def save_image(image, filename):
     cv2.imwrite(filename, image)
 
-def preprocess_image_tresh(image):
+def preprocess_image_for_detection(image):
     gray = cv2.cvtColor(image, cv2.COLOR_BGR2GRAY)
     blur = cv2.GaussianBlur(gray, (7,7), 0)
     thresh = cv2.adaptiveThreshold(blur, 255, 1, 1, 15, 2)
-    return thresh
+    
+    # Use dilation and erosion to emphasize the grid lines
+    kernel = np.ones((3,3),np.uint8)
+    dilation = cv2.dilate(thresh,kernel,iterations = 1)
+    erosion = cv2.erode(dilation,kernel,iterations = 1)
+
+    save_image(erosion, './manipulated_grids/edges.png')
+    
+    return erosion
 
 def find_largest_contour(contours):
     max_area = 0
@@ -265,11 +279,12 @@ def extract_ROIs(contours, original, coefficient):
     ROIs = []
     yt = None  # y-coordinate of the previous ROI
     n = 1  # count of ROIs with the same y-coordinate
+    tolerance = 10  # tolerance for the y-coordinate
     for i in contours:
         area = cv2.contourArea(i)
         if area > MIN_CONTOUR_AREA:
             x, y, w, h = cv2.boundingRect(i)
-            if yt == y:
+            if yt is not None and abs(y - yt) <= tolerance:
                 n += 1
             else:
                 yt = y
@@ -298,7 +313,8 @@ def main():
     #ask user terminale input for training model
     train_flag  = input("Do you want to train the model? (y/n): ")  
     if train_flag == 'y':
-        train_model()
+        training_operation, X_test, y_test, seq_lett_model = train_model()
+        model_statistics(training_operation, X_test, y_test, seq_lett_model)
     
     seq_lett_model = keras.models.load_model('seq_lett_model.keras')
 
@@ -319,11 +335,10 @@ def main():
     if image is None:
         print(f"Error loading image: image_path")
         return
-    thresh = preprocess_image_tresh(image)
-    contours, _ = cv2.findContours(thresh, cv2.RETR_TREE, cv2.CHAIN_APPROX_SIMPLE)
+    processed_image = preprocess_image_for_detection(image)
+    contours, _ = cv2.findContours(processed_image, cv2.RETR_TREE, cv2.CHAIN_APPROX_SIMPLE)
     largest_contour = find_largest_contour(contours)
-    #dimension_coeff = determine_min_contour_area_coefficient(image_path)
-    ROIs, n = extract_ROIs(contours, image.copy(), 0.03)
+    ROIs, n = extract_ROIs(contours, image.copy(), 0.02)
 
     for i, ROI in enumerate(ROIs):
         save_image(ROI, f'./manipulated_grids/ROI_{i}.png')
