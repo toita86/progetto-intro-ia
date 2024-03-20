@@ -225,17 +225,18 @@ def train_model():
     seq_lett_model.save('seq_lett_model.keras')
     return training_operation, X_test, y_test, seq_lett_model
 
+
 def capture_image_from_webcam():
-    # Detect if the system is a mac or linux
-    if os.name == 'posix':
+    import platform
+    # Determina il dispositivo video in base al sistema operativo
+    if platform.system() == 'Linux':
         video_device = 0
     else:
         video_device = 1
-    cap = cv2.VideoCapture(video_device)
-    
 
-    if not cap.isOpened():
-        raise IOError("Cannot open webcam")
+    # Crea l'oggetto VideoCapture utilizzando il dispositivo video appropriato
+    cap = cv2.VideoCapture(video_device)
+
     while True:
         ret, frame = cap.read()
         if ret:
