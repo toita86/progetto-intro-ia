@@ -9,10 +9,175 @@ from tensorflow import keras
 from sklearn.metrics import confusion_matrix
 from sklearn.metrics import ConfusionMatrixDisplay
 from sklearn.metrics import classification_report
+from aima import Problem, Node, search #  Import aimacode from the aima-python library
+from enum import Enum
+
 
 # Import the necessary functions from the emnist library
 from emnist import extract_training_samples
 from emnist import extract_test_samples
+
+'''
+Uniform Coloring è un dominio in cui si hanno a disposizione alcune celle da colorare, e vari colori
+a disposizione. Per semplicità immaginiamo una griglia rettangolare in cui è possibile spostare una
+testina colorante fra le celle attigue secondo le 4 direzioni cardinali (N,S,E,W), senza uscire dalla
+griglia. Tutte le celle hanno un colore di partenza (B=blu, Y=yellow, G=green) ad eccezione di
+quella in cui si trova la testina indicata con T. La testina può colorare la cella in cui si trova con uno
+qualsiasi dei colori disponibili a differenti costi (cost(B)=1, cost(Y)=2, cost(G)=3), mentre gli
+spostamenti hanno tutti costo uniforme pari a 1. L’obiettivo è colorare tutte le celle dello stesso
+colore (non importa quale) e riportare la testina nella sua posizione di partenza.
+La codifica di tutto il dominio (topologia della griglia, definizione delle azioni etc.) è parte
+dell’esercizio. Partendo dalla posizione iniziale della testina e combinando azioni di spostamento e
+colorazione, si chiede di trovare la sequenza di azioni dell’agente per raggiungere l’obiettivo.
+La posizione iniziale della testina, la struttura della griglia e la colorazione iniziale delle celle sono
+passati al sistema tramite un’immagine.
+'''
+
+MOV_COST = 1
+
+class Colors():
+    BLUE = 1
+    YELLOW = 2
+    GREEN = 3
+
+
+class Directions():
+    UP = (-1, 0)
+    DOWN = (1, 0)
+    LEFT = (0, -1)
+    RIGHT = (0, 1)
+
+class State():
+    def __init__(self, grid, i, j):
+        self.grid = grid
+        self.i = i # row
+        self.j = j # column
+        self.id = str(i)+str(j)
+        for row in grid:
+            for tile in row:
+                self.id = self.id+str(tile)
+    
+    def __lt__(self, state):
+        return False
+
+class UniformColoring(Problem):
+    """The abstract class for a formal problem.  You should subclass this and
+    implement the method successor, and possibly __init__, goal_test, and
+    path_cost. Then you will create instances of your subclass and solve them
+    with the various search functions."""
+
+    def __init__(self, initial, goal=None):
+        """The constructor specifies the initial state, and possibly a goal
+        state, if there is a unique goal.  Your subclass's constructor can add
+        other arguments."""
+        super().__init__(initial, goal)
+    
+    def actions(self, state):
+        """Return the actions that can be executed in the given
+        state. The result would typically be a list, but if there are many
+        actions, consider yielding them one at a time in an iterator, rather
+        than building them all at once."""
+        actions = []
+        if state.i > 0:
+            actions.append(Directions.UP)
+        if state.i < len(state.grid)-1:
+            actions.append(Directions.DOWN)
+        if state.j > 0:
+            actions.append(Directions.LEFT)
+        if state.j < len(state.grid[0])-1:
+            actions.append(Directions.RIGHT)
+        return actions
+        '''actions=[]
+        if (state.i != self.initial.i) or (state.j != self.initial.j):
+            for color in Colors:  # action color tile
+                if (color.value != state.grid[state.i][state.j]):
+                    actions.append(color)
+        for direction in Directions:  # action move
+            coords=(state.i+direction.value[0],state.j+direction.value[1])
+            if coords[0] in range(grid.shape[0]) and coords[1] in range(grid.shape[1]):
+                actions.append(direction)
+        return actions'''
+    
+    def result(self, state, action):
+        """Return the state that results from executing the given
+        action in the given state. The action must be one of
+        self.actions(state)."""
+        if action in Directions:
+            return State(state.grid,state.i+action.value[0],state.j+action.value[1])
+        else:
+            grid=np.copy(state.grid)
+            grid[state.i][state.j]=action.value
+            return State(grid,state.i,state.j)
+
+    def goal_test(self, state):
+        """Return True if the state is a goal. The default method compares the
+        state to self.goal, as specified in the constructor. Implement this
+        method if checking against a single self.goal is not enough."""
+        test_color = None
+        if ((state.i, state.j) == (self.initial.i, self.initial.j)):  # if it's back at the start position
+            for color in Colors:
+                if color.value in state.grid:
+                    if test_color == None:
+                        test_color = color.value
+                    if color.value != test_color:
+                        return False
+        else:
+            return False
+        return True
+
+    def path_cost(self, c, state1, action, state2):
+        """Return the cost of a solution path that arrives at state2 from
+        state1 via action, assuming cost c to get up to state1. If the problem
+        is such that the path doesn't matter, this function will only look at
+        state2.  If the path does matter, it will consider c and maybe state1
+        and action. The default method costs 1 for every step in the path."""
+        if action in Colors:
+            return c + action.value
+        return c + MOV_COST
+
+    def value(self):
+        """For optimization problems, each state has a value.  Hill-climbing
+        and related algorithms try to maximize this value."""
+        raise NotImplementedError
+    
+def best_first_graph_search(problem, f, display=False):
+    """Search the nodes with the lowest f scores first.
+    You specify the function f(node) that you want to minimize; for example,
+    if f is a heuristic estimate to the goal, then we have greedy best
+    first search; if f is node.depth then we have breadth-first search.
+    There is a subtlety: the line "f = memoize(f, 'f')" means that the f
+    values will be cached on the nodes as they are computed. So after doing
+    a best first search you can examine the f values of the path returned."""
+    f = search.memoize(f, 'f')
+    node = Node(problem.initial)
+    #print("#COORDS0:", node.state.i, node.state.j, node.state.grid)
+    frontier = search.PriorityQueue('min', f)
+    frontier.append(node)
+    lookup_frontier=set()
+    lookup_frontier.add(id(node))
+    explored = set()
+    while frontier:
+        #print("frontiera:", len(frontier))
+        node = frontier.pop()
+        #print("#NODE:", node.state.i, node.state.j, node.state.grid)
+        lookup_frontier.remove(id(node))
+        if problem.goal_test(node.state):
+            if display:
+                print(len(explored), "paths have been expanded and", len(frontier), "paths remain in the frontier")
+            return node
+        explored.add(node.state.id)
+        for child in node.expand(problem):
+            #print("#CHILD:", node.state.i, node.state.j, node.state.grid)
+            if child.state.id not in explored and id(child) not in lookup_frontier:
+                lookup_frontier.add(id(child))
+                frontier.append(child)
+            elif id(child) in lookup_frontier:
+                if f(child) < frontier[child]:
+                    del frontier[child]
+                    lookup_frontier.add(id(child))
+                    frontier.append(child)
+    return None
+
 
 # Define the labels for the EMNIST dataset
 LABELS = ['0', '1', '2', '3', '4', '5', '6', '7', '8', '9', 
@@ -199,9 +364,9 @@ def train_model():
     seq_lett_model = create_model()
 
     # Set the batch size. This is the number of samples that will be passed through the network at once.
-    batch_size = 64
+    batch_size = 32
 
-    # Set the number of epochs to 7. An epoch is one complete pass through the entire training dataset.
+    # Set the number of epochs. An epoch is one complete pass through the entire training dataset.
     epochs = 15
 
     # Compile the model. 
@@ -224,7 +389,6 @@ def train_model():
     # Save the trained model to a file so that it can be loaded later for making predictions or continuing training.
     seq_lett_model.save('seq_lett_model.keras')
     return training_operation, X_test, y_test, seq_lett_model
-
 
 def capture_image_from_webcam():
     import platform
@@ -261,8 +425,6 @@ def preprocess_image_for_detection(image):
     kernel = np.ones((3,3),np.uint8)
     dilation = cv2.dilate(thresh,kernel,iterations = 1)
     erosion = cv2.erode(dilation,kernel,iterations = 1)
-
-    save_image(erosion, './manipulated_grids/edges.png')
     
     return erosion
 
@@ -310,7 +472,7 @@ def preprocess_image(image_path):
     return im
 
 def main():
-    list_datasets()
+    '''list_datasets()
     #ask user terminale input for training model
     train_flag  = input("Do you want to train the model? (y/n): ")  
     if train_flag == 'y':
@@ -337,8 +499,9 @@ def main():
         print(f"Error loading image: image_path")
         return
     processed_image = preprocess_image_for_detection(image)
+    canny = cv2.Canny(np.asarray(processed_image), 0, 200)
     contours, _ = cv2.findContours(processed_image, cv2.RETR_TREE, cv2.CHAIN_APPROX_SIMPLE)
-    largest_contour = find_largest_contour(contours)
+    #largest_contour = find_largest_contour(contours)
     ROIs, n = extract_ROIs(contours, image.copy(), 0.02)
 
     for i, ROI in enumerate(ROIs):
@@ -361,6 +524,25 @@ def main():
     label_mapping = {0: 'T', 1: 'B', 2: 'Y', 3: 'G'}
     show = np.vectorize(label_mapping.get)(grid)
     print(show)
+    #os.system("find './manipulated_grids/' -name 'ROI_*' -exec rm {} \;")'''
+
+    grid=np.array([[0, 2, 2, 3], [2, 2, 3, 2], [3, 1, 2, 2], [1, 3, 3, 1]])
+    """grid=np.array([[2, 1, 2, 3, 1],
+        [2, 3, 1, 3, 1],
+        [0, 1, 2, 3, 2],
+        [2, 1, 3, 3, 2]])"""
+    for i in range(grid.shape[0]):
+        for j in range(grid.shape[1]):
+            if grid[i][j]==0:
+                initial_state=State(grid,i,j)
+                break
+    
+    problem=UniformColoring(initial_state)
+
+    end = best_first_graph_search(problem, lambda n: n.path_cost, display=True)
+    print("Final state: \n",end.state.grid)
+    print("Solution cost:",end.path_cost)
+    print(end.solution())
 
 if __name__ == "__main__":
     main()
