@@ -37,13 +37,13 @@ passati al sistema tramite un’immagine.
 
 MOV_COST = 1
 
-class Colors(Enum):
+class Colors():
     BLUE = 1
     YELLOW = 2
     GREEN = 3
 
 
-class Directions(Enum):
+class Directions():
     UP = (-1, 0)
     DOWN = (1, 0)
     LEFT = (0, -1)
@@ -79,16 +79,26 @@ class UniformColoring(Problem):
         state. The result would typically be a list, but if there are many
         actions, consider yielding them one at a time in an iterator, rather
         than building them all at once."""
-        actions=[]
+        actions = []
+        if state.i > 0:
+            actions.append(Directions.UP)
+        if state.i < len(state.grid)-1:
+            actions.append(Directions.DOWN)
+        if state.j > 0:
+            actions.append(Directions.LEFT)
+        if state.j < len(state.grid[0])-1:
+            actions.append(Directions.RIGHT)
+        return actions
+        '''actions=[]
         if (state.i != self.initial.i) or (state.j != self.initial.j):
             for color in Colors:  # action color tile
                 if (color.value != state.grid[state.i][state.j]):
                     actions.append(color)
         for direction in Directions:  # action move
             coords=(state.i+direction.value[0],state.j+direction.value[1])
-            if coords[0] in range(state.grid.shape[0]) and coords[1] in range(state.grid.shape[1]):
+            if coords[0] in range(grid.shape[0]) and coords[1] in range(grid.shape[1]):
                 actions.append(direction)
-        return actions
+        return actions'''
     
     def result(self, state, action):
         """Return the state that results from executing the given
@@ -131,7 +141,7 @@ class UniformColoring(Problem):
         """For optimization problems, each state has a value.  Hill-climbing
         and related algorithms try to maximize this value."""
         raise NotImplementedError
-
+    
 def best_first_graph_search(problem, f, display=False):
     """Search the nodes with the lowest f scores first.
     You specify the function f(node) that you want to minimize; for example,
@@ -141,7 +151,7 @@ def best_first_graph_search(problem, f, display=False):
     values will be cached on the nodes as they are computed. So after doing
     a best first search you can examine the f values of the path returned."""
     f = memoize(f, 'f')
-    node = Node(problem.initial)
+    node = Node(problem.INITIAL)
     #print("#COORDS0:", node.state.i, node.state.j, node.state.grid)
     frontier = PriorityQueue('min', f)
     frontier.append(node)
@@ -464,7 +474,7 @@ def preprocess_image(image_path):
     return im
 
 def main():
-    #list_datasets()
+    '''list_datasets()
     #ask user terminale input for training model
     train_flag  = input("Do you want to train the model? (y/n): ")  
     if train_flag == 'y':
@@ -516,13 +526,10 @@ def main():
     label_mapping = {0: 'T', 1: 'B', 2: 'Y', 3: 'G'}
     show = np.vectorize(label_mapping.get)(grid)
     print(show)
-    #os.system("find './manipulated_grids/' -name 'ROI_*' -exec rm {} \;")
+    #os.system("find './manipulated_grids/' -name 'ROI_*' -exec rm {} \;")'''
 
-    """grid=np.array([
-        [0, 2, 1], 
-        [2, 3, 2],
-        [1, 2, 3],])
-    grid=np.array([[2, 1, 2, 3, 1],
+    grid=np.array([[0, 2, 2, 3], [2, 2, 3, 2], [3, 1, 2, 2], [1, 3, 3, 1]])
+    """grid=np.array([[2, 1, 2, 3, 1],
         [2, 3, 1, 3, 1],
         [0, 1, 2, 3, 2],
         [2, 1, 3, 3, 2]])"""
