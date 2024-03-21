@@ -536,6 +536,29 @@ def preprocess_image(image_path):
     im = tf.expand_dims(im, axis=0)
     return im
 
+def prediction(ROIs, n, seq_lett_model):
+    # Preprocess the ROIs and make predictions
+    l = []
+    for i in range(1, len(ROIs)):
+        im = preprocess_image(f"./manipulated_grids/ROI_{i}.png")
+        if im is not None:
+            prediction = seq_lett_model.predict(im)
+            max = np.where(prediction == np.amax(prediction))
+            l.append(int(max[1][0]))
+
+    # Create the grid from the predictions
+    nrow = len(l) // n if n < len(l) else n // len(l)
+    nrow = int(nrow)
+
+    mat = np.array(list(reversed(l)))
+    grid = mat.reshape(nrow, n)
+
+    label_mapping = {0: 'T', 1: 'B', 2: 'Y', 3: 'G'}
+    show = np.vectorize(label_mapping.get)(grid)
+    print(show)
+    #os.system("find './manipulated_grids/' -name 'ROI_*' -exec rm {} \;")'''
+
+
 def main():
     #ask user terminale input for training model
     train_flag  = input("Do you want to train the model? (y/n): ")  
@@ -575,26 +598,8 @@ def main():
     for i, ROI in enumerate(ROIs):
         save_image(ROI, f'./manipulated_grids/ROI_{i}.png')
 
-    # Preprocess the ROIs and make predictions
-    l = []
-    for i in range(1, len(ROIs)):
-        im = preprocess_image(f"./manipulated_grids/ROI_{i}.png")
-        if im is not None:
-            prediction = seq_lett_model.predict(im)
-            max = np.where(prediction == np.amax(prediction))
-            l.append(int(max[1][0]))
-
-    # Create the grid from the predictions
-    nrow = len(l) // n if n < len(l) else n // len(l)
-    nrow = int(nrow)
-
-    mat = np.array(list(reversed(l)))
-    grid = mat.reshape(nrow, n)
-
-    label_mapping = {0: 'T', 1: 'B', 2: 'Y', 3: 'G'}
-    show = np.vectorize(label_mapping.get)(grid)
-    print(show)
-    #os.system("find './manipulated_grids/' -name 'ROI_*' -exec rm {} \;")'''
+    prediction(ROIs, n, seq_lett_model)
+    
 
     """
     grid=np.array([
