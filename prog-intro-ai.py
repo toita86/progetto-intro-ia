@@ -21,18 +21,24 @@ from emnist import extract_test_samples
 
 '''
 Uniform Coloring è un dominio in cui si hanno a disposizione alcune celle da colorare, e vari colori
-a disposizione. Per semplicità immaginiamo una griglia rettangolare in cui è possibile spostare una
+a disposizione. 
+Per semplicità immaginiamo una griglia rettangolare in cui è possibile spostare una
 testina colorante fra le celle attigue secondo le 4 direzioni cardinali (N,S,E,W), senza uscire dalla
-griglia. Tutte le celle hanno un colore di partenza (B=blu, Y=yellow, G=green) ad eccezione di
-quella in cui si trova la testina indicata con T. La testina può colorare la cella in cui si trova con uno
+griglia. 
+Tutte le celle hanno un colore di partenza (B=blu, Y=yellow, G=green) ad eccezione di
+quella in cui si trova la testina indicata con T. 
+La testina può colorare la cella in cui si trova con uno
 qualsiasi dei colori disponibili a differenti costi (cost(B)=1, cost(Y)=2, cost(G)=3), mentre gli
-spostamenti hanno tutti costo uniforme pari a 1. L’obiettivo è colorare tutte le celle dello stesso
+spostamenti hanno tutti costo uniforme pari a 1. 
+
+L'obiettivo è colorare tutte le celle dello stesso
 colore (non importa quale) e riportare la testina nella sua posizione di partenza.
 La codifica di tutto il dominio (topologia della griglia, definizione delle azioni etc.) è parte
-dell’esercizio. Partendo dalla posizione iniziale della testina e combinando azioni di spostamento e
-colorazione, si chiede di trovare la sequenza di azioni dell’agente per raggiungere l’obiettivo.
+dell'esercizio. 
+Partendo dalla posizione iniziale della testina e combinando azioni di spostamento e
+colorazione, si chiede di trovare la sequenza di azioni dell'agente per raggiungere l'obiettivo.
 La posizione iniziale della testina, la struttura della griglia e la colorazione iniziale delle celle sono
-passati al sistema tramite un’immagine.
+passati al sistema tramite un'immagine.
 '''
 
 MOV_COST = 1
@@ -41,7 +47,6 @@ class Colors(Enum):
     BLUE = 1
     YELLOW = 2
     GREEN = 3
-
 
 class Directions(Enum):
     UP = (-1, 0)
@@ -170,6 +175,13 @@ def best_first_graph_search(problem, f, display=False):
                     frontier.append(child)
     return None
 
+def initialize_state(grid):
+    for i in range(grid.shape[0]):
+        for j in range(grid.shape[1]):
+            if grid[i][j]==0:
+                return State(grid,i,j)
+    return None
+
 
 # Define the labels for the EMNIST dataset
 LABELS = ['0', '1', '2', '3', '4', '5', '6', '7', '8', '9', 
@@ -247,6 +259,12 @@ def filterDataset(X_data, y_data):
     return (new_X_data, new_y_data)
 
 def create_model():
+    """
+    Creates a convolutional neural network model for image classification.
+
+    Returns:
+        keras.Sequential: The created model.
+    """
     seq_lett_model = keras.Sequential([
         keras.Input(shape=(28, 28, 1)), # Input shape: 28x28 pixels, 1 color channel
         keras.layers.Conv2D(28, (3, 3), activation='relu'),
@@ -383,6 +401,12 @@ def train_model():
     return training_operation, X_test, y_test, seq_lett_model
 
 def capture_image_from_webcam():
+    """
+    Captures an image from the webcam and returns the captured frame.
+
+    Returns:
+        numpy.ndarray: The captured frame from the webcam.
+    """
     import platform
     # Determina il dispositivo video in base al sistema operativo
     if platform.system() == 'Linux':
@@ -409,6 +433,19 @@ def save_image(image, filename):
     cv2.imwrite(filename, image)
 
 def preprocess_image_for_detection(image):
+    """
+    Preprocesses an image for object detection by performing the following steps:
+    1. Converts the image to grayscale.
+    2. Applies Gaussian blur to reduce noise.
+    3. Applies adaptive thresholding to create a binary image.
+    4. Performs dilation and erosion to emphasize grid lines.
+    
+    Args:
+        image (numpy.ndarray): The input image to be preprocessed.
+        
+    Returns:
+        numpy.ndarray: The preprocessed image.
+    """
     gray = cv2.cvtColor(image, cv2.COLOR_BGR2GRAY)
     blur = cv2.GaussianBlur(gray, (7,7), 0)
     thresh = cv2.adaptiveThreshold(blur, 255, 1, 1, 15, 2)
@@ -430,6 +467,19 @@ def find_largest_contour(contours):
     return largest_contour
 
 def extract_ROIs(contours, original, coefficient):
+    """
+    Extracts regions of interest (ROIs) from the given contours based on the provided coefficient.
+
+    Parameters:
+    - contours: A list of contours.
+    - original: The original image.
+    - coefficient: A coefficient used to calculate the minimum contour area.
+
+    Returns:
+    - ROIs: A list of extracted regions of interest.
+    - n: The count of ROIs with the same y-coordinate.
+
+    """
     MIN_CONTOUR_AREA = coefficient * original.shape[0] * original.shape[1]
     ROIs = []
     yt = None  # y-coordinate of the previous ROI
@@ -449,6 +499,19 @@ def extract_ROIs(contours, original, coefficient):
     return ROIs, n
 
 def preprocess_image(image_path):
+    """
+    Preprocesses an image for further analysis.
+
+    Args:
+        image_path (str): The path to the image file.
+
+    Returns:
+        numpy.ndarray: The preprocessed image as a numpy array.
+
+    Raises:
+        None
+
+    """
     im = cv2.imread(image_path)
     if im is None:
         print(f"Error loading image: {image_path}")
@@ -464,15 +527,16 @@ def preprocess_image(image_path):
     return im
 
 def main():
-    #list_datasets()
     #ask user terminale input for training model
     train_flag  = input("Do you want to train the model? (y/n): ")  
     if train_flag == 'y':
         training_operation, X_test, y_test, seq_lett_model = train_model()
         model_statistics(training_operation, X_test, y_test, seq_lett_model)
     
+    # Load the trained model from the file
     seq_lett_model = keras.models.load_model('seq_lett_model.keras')
 
+    # Delete all the files in the manipulated_grids folder
     os.system("find './manipulated_grids/' -name 'ROI_*' -exec rm {} \;")
 
     # Ask user to take a picture of the grid or if they want to use a default image from file explorer
@@ -486,19 +550,22 @@ def main():
         path = input("Enter the name of the image: ")
         image_path = f'./grids/{path}.png'
 
+    # Load the image
     image = cv2.imread(image_path)
     if image is None:
         print(f"Error loading image: image_path")
         return
     processed_image = preprocess_image_for_detection(image)
-    canny = cv2.Canny(np.asarray(processed_image), 0, 200)
+    #canny = cv2.Canny(np.asarray(processed_image), 0, 200)
     contours, _ = cv2.findContours(processed_image, cv2.RETR_TREE, cv2.CHAIN_APPROX_SIMPLE)
     #largest_contour = find_largest_contour(contours)
     ROIs, n = extract_ROIs(contours, image.copy(), 0.02)
 
+    # Save the ROIs to the manipulated_grids folder
     for i, ROI in enumerate(ROIs):
         save_image(ROI, f'./manipulated_grids/ROI_{i}.png')
 
+    # Preprocess the ROIs and make predictions
     l = []
     for i in range(1, len(ROIs)):
         im = preprocess_image(f"./manipulated_grids/ROI_{i}.png")
@@ -507,6 +574,7 @@ def main():
             max = np.where(prediction == np.amax(prediction))
             l.append(int(max[1][0]))
 
+    # Create the grid from the predictions
     nrow = len(l) // n if n < len(l) else n // len(l)
     nrow = int(nrow)
 
@@ -518,21 +586,19 @@ def main():
     print(show)
     #os.system("find './manipulated_grids/' -name 'ROI_*' -exec rm {} \;")
 
-    """grid=np.array([
+    """
+    grid=np.array([
         [0, 2, 1], 
         [2, 3, 2],
         [1, 2, 3],])
     grid=np.array([[2, 1, 2, 3, 1],
         [2, 3, 1, 3, 1],
         [0, 1, 2, 3, 2],
-        [2, 1, 3, 3, 2]])"""
-    for i in range(grid.shape[0]):
-        for j in range(grid.shape[1]):
-            if grid[i][j]==0:
-                initial_state=State(grid,i,j)
-                break
+        [2, 1, 3, 3, 2]])
+    """
     
-    problem=UniformColoring(initial_state)
+    # Define the initial state
+    problem=UniformColoring(initialize_state(grid))
 
     end = best_first_graph_search(problem, lambda n: n.path_cost, display=True)
     print("Final state: \n",end.state.grid)
