@@ -43,7 +43,7 @@ passati al sistema tramite un'immagine.
 
 MOV_COST = 1
 
-class Colors(Enum):
+class Colors():
     BLUE = 1
     YELLOW = 2
     GREEN = 3
@@ -84,16 +84,26 @@ class UniformColoring(Problem):
         state. The result would typically be a list, but if there are many
         actions, consider yielding them one at a time in an iterator, rather
         than building them all at once."""
-        actions=[]
+        actions = []
+        if state.i > 0:
+            actions.append(Directions.UP)
+        if state.i < len(state.grid)-1:
+            actions.append(Directions.DOWN)
+        if state.j > 0:
+            actions.append(Directions.LEFT)
+        if state.j < len(state.grid[0])-1:
+            actions.append(Directions.RIGHT)
+        return actions
+        '''actions=[]
         if (state.i != self.initial.i) or (state.j != self.initial.j):
             for color in Colors:  # action color tile
                 if (color.value != state.grid[state.i][state.j]):
                     actions.append(color)
         for direction in Directions:  # action move
             coords=(state.i+direction.value[0],state.j+direction.value[1])
-            if coords[0] in range(state.grid.shape[0]) and coords[1] in range(state.grid.shape[1]):
+            if coords[0] in range(grid.shape[0]) and coords[1] in range(grid.shape[1]):
                 actions.append(direction)
-        return actions
+        return actions'''
     
     def result(self, state, action):
         """Return the state that results from executing the given
@@ -136,7 +146,7 @@ class UniformColoring(Problem):
         """For optimization problems, each state has a value.  Hill-climbing
         and related algorithms try to maximize this value."""
         raise NotImplementedError
-
+    
 def best_first_graph_search(problem, f, display=False):
     """Search the nodes with the lowest f scores first.
     You specify the function f(node) that you want to minimize; for example,
@@ -146,7 +156,7 @@ def best_first_graph_search(problem, f, display=False):
     values will be cached on the nodes as they are computed. So after doing
     a best first search you can examine the f values of the path returned."""
     f = memoize(f, 'f')
-    node = Node(problem.initial)
+    node = Node(problem.INITIAL)
     #print("#COORDS0:", node.state.i, node.state.j, node.state.grid)
     frontier = PriorityQueue('min', f)
     frontier.append(node)
@@ -526,6 +536,29 @@ def preprocess_image(image_path):
     im = tf.expand_dims(im, axis=0)
     return im
 
+def prediction(ROIs, n, seq_lett_model):
+    # Preprocess the ROIs and make predictions
+    l = []
+    for i in range(1, len(ROIs)):
+        im = preprocess_image(f"./manipulated_grids/ROI_{i}.png")
+        if im is not None:
+            prediction = seq_lett_model.predict(im)
+            max = np.where(prediction == np.amax(prediction))
+            l.append(int(max[1][0]))
+
+    # Create the grid from the predictions
+    nrow = len(l) // n if n < len(l) else n // len(l)
+    nrow = int(nrow)
+
+    mat = np.array(list(reversed(l)))
+    grid = mat.reshape(nrow, n)
+
+    label_mapping = {0: 'T', 1: 'B', 2: 'Y', 3: 'G'}
+    show = np.vectorize(label_mapping.get)(grid)
+    print(show)
+    #os.system("find './manipulated_grids/' -name 'ROI_*' -exec rm {} \;")'''
+
+
 def main():
     #ask user terminale input for training model
     train_flag  = input("Do you want to train the model? (y/n): ")  
@@ -565,26 +598,8 @@ def main():
     for i, ROI in enumerate(ROIs):
         save_image(ROI, f'./manipulated_grids/ROI_{i}.png')
 
-    # Preprocess the ROIs and make predictions
-    l = []
-    for i in range(1, len(ROIs)):
-        im = preprocess_image(f"./manipulated_grids/ROI_{i}.png")
-        if im is not None:
-            prediction = seq_lett_model.predict(im)
-            max = np.where(prediction == np.amax(prediction))
-            l.append(int(max[1][0]))
-
-    # Create the grid from the predictions
-    nrow = len(l) // n if n < len(l) else n // len(l)
-    nrow = int(nrow)
-
-    mat = np.array(list(reversed(l)))
-    grid = mat.reshape(nrow, n)
-
-    label_mapping = {0: 'T', 1: 'B', 2: 'Y', 3: 'G'}
-    show = np.vectorize(label_mapping.get)(grid)
-    print(show)
-    #os.system("find './manipulated_grids/' -name 'ROI_*' -exec rm {} \;")
+    prediction(ROIs, n, seq_lett_model)
+    
 
     """
     grid=np.array([
