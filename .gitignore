@@ -1,3 +1,4 @@
 .obsidian/
 .DS_Store
 seq_lett_model.keras
+__pycache__/
