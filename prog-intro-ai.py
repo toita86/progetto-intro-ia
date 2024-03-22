@@ -4,6 +4,7 @@ import matplotlib.pyplot as plt
 import cv2
 import datetime
 import os
+import time
 from emnist import list_datasets
 from tensorflow import keras    
 from sklearn.metrics import confusion_matrix
@@ -43,7 +44,7 @@ passati al sistema tramite un'immagine.
 
 MOV_COST = 1
 
-class Colors():
+class Colors(Enum):
     BLUE = 1
     YELLOW = 2
     GREEN = 3
@@ -53,6 +54,9 @@ class Directions(Enum):
     DOWN = (1, 0)
     LEFT = (0, -1)
     RIGHT = (0, 1)
+
+class Heuristic(Enum):
+    heuristic_color_use_most_present = 1
 
 class State():
     def __init__(self, grid, i, j):
@@ -73,37 +77,28 @@ class UniformColoring(Problem):
     path_cost. Then you will create instances of your subclass and solve them
     with the various search functions."""
 
-    def __init__(self, initial, goal=None):
+    def __init__(self, initial, heuristic_type):
         """The constructor specifies the initial state, and possibly a goal
         state, if there is a unique goal.  Your subclass's constructor can add
         other arguments."""
-        super().__init__(initial, goal)
+        self.initial = initial
+        self.heuristic_type = heuristic_type
     
     def actions(self, state):
         """Return the actions that can be executed in the given
         state. The result would typically be a list, but if there are many
         actions, consider yielding them one at a time in an iterator, rather
         than building them all at once."""
-        actions = []
-        if state.i > 0:
-            actions.append(Directions.UP)
-        if state.i < len(state.grid)-1:
-            actions.append(Directions.DOWN)
-        if state.j > 0:
-            actions.append(Directions.LEFT)
-        if state.j < len(state.grid[0])-1:
-            actions.append(Directions.RIGHT)
-        return actions
-        '''actions=[]
+        actions=[]
         if (state.i != self.initial.i) or (state.j != self.initial.j):
             for color in Colors:  # action color tile
                 if (color.value != state.grid[state.i][state.j]):
                     actions.append(color)
         for direction in Directions:  # action move
             coords=(state.i+direction.value[0],state.j+direction.value[1])
-            if coords[0] in range(grid.shape[0]) and coords[1] in range(grid.shape[1]):
+            if coords[0] in range(state.grid.shape[0]) and coords[1] in range(state.grid.shape[1]):
                 actions.append(direction)
-        return actions'''
+        return actions
     
     def result(self, state, action):
         """Return the state that results from executing the given
@@ -141,6 +136,82 @@ class UniformColoring(Problem):
         if action in Colors:
             return c + action.value
         return c + MOV_COST
+    
+    def color_initial_choice(self, node):
+        # count the number of each color in the grid
+        colors = {
+            Colors.BLUE.value: 0, 
+            Colors.YELLOW.value: 0, 
+            Colors.GREEN.value: 0
+        }
+        for row in node.state.grid:
+            for tile in row:
+                if tile == 0: #0 corresponds to the initial position T
+                    continue
+                colors[tile] += 1
+
+        num_tot_grid = (node.state.grid.shape[0] * node.state.grid.shape[1]) -1
+        res = []
+        for color in colors:
+            res.append((num_tot_grid - colors[color])*2)
+        
+        return res.index(min(res)) + 1
+    
+    def manhattan_distance(self, coord1, coord2):
+        return abs(coord2[0] - coord1[0]) + abs(coord2[1] - coord1[1])
+    
+    def heuristic(self, node, color_choice):
+        if self.heuristic_type == Heuristic.heuristic_color_use_most_present:
+            return self.heuristic_color_use_most_present(node, color_choice)
+    
+    def heuristic_color_use_most_present(self, node, color_choice):
+        """Return the heuristic value for a given state. Default heuristic
+        function is 0."""
+        h = 0
+        grid = node.state.grid
+        not_colored = []
+        starting_point = []
+        for i in range(grid.shape[0]):
+            for j in range(grid.shape[1]):
+                if(grid[i][j] != color_choice and grid[i][j] != 0):
+                    not_colored.append((i, j))
+                    h += color_choice
+                if(grid[i][j] == 0):
+                    starting_point.append((i, j))
+        i = node.state.i
+        j = node.state.j
+
+        for to_color in not_colored:
+            h += self.manhattan_distance((i, j), to_color)
+        
+        return h
+    
+    def h(self, node):
+        """Return the heuristic value for a given state."""
+        i,j=(node.state.i,node.state.j)
+        color_choice = self.color_initial_choice(node)
+        if node.action != None and node.action in Colors:
+            return self.heuristic(node, color_choice)
+        parent=node.parent
+        color=None
+        #If the action is in Directions the heuristic evaluation is based on the parent color
+        if parent != None:
+            color=parent.state.grid[parent.state.i][parent.state.j]
+        if (i,j) == (self.initial.i,self.initial.j) or color==0: #If I don't have a parent color, i choose the one that minimizes the Heuristic value
+            h = None
+            for color in Colors:
+                temp_h = self.heuristic(node, color.value)
+                if h == None:
+                    h=temp_h
+                if temp_h < h:
+                    h = temp_h
+            #print("Heuristic 0,0 value:", h)
+            return h
+        else:
+            h = self.heuristic(node, color)
+            #print("Heuristic value:", h, node.state.grid, i,j)
+            return h
+
 
     def value(self):
         """For optimization problems, each state has a value.  Hill-climbing
@@ -156,7 +227,7 @@ def best_first_graph_search(problem, f, display=False):
     values will be cached on the nodes as they are computed. So after doing
     a best first search you can examine the f values of the path returned."""
     f = memoize(f, 'f')
-    node = Node(problem.INITIAL)
+    node = Node(problem.initial)
     #print("#COORDS0:", node.state.i, node.state.j, node.state.grid)
     frontier = PriorityQueue('min', f)
     frontier.append(node)
@@ -184,6 +255,17 @@ def best_first_graph_search(problem, f, display=False):
                     lookup_frontier.add(id(child))
                     frontier.append(child)
     return None
+
+def astar_search(problem, h=None, display=True): 
+    print("Compute astar_search...")
+    """A* search is best-first graph search with f(n) = g(n)+h(n).
+    You need to specify the h function when you call astar_search, or
+    else in your Problem subclass."""
+    start_time = time.time()
+    h = memoize(h or problem.h, 'h')
+    end = best_first_graph_search(problem, lambda n: n.path_cost + h(n), display)
+    print("--- %s seconds ---" % (time.time() - start_time))
+    return end
 
 def initialize_state(grid):
     for i in range(grid.shape[0]):
@@ -557,6 +639,7 @@ def prediction(ROIs, n, seq_lett_model):
     show = np.vectorize(label_mapping.get)(grid)
     print(show)
     #os.system("find './manipulated_grids/' -name 'ROI_*' -exec rm {} \;")'''
+    return grid
 
 
 def main():
@@ -598,7 +681,7 @@ def main():
     for i, ROI in enumerate(ROIs):
         save_image(ROI, f'./manipulated_grids/ROI_{i}.png')
 
-    prediction(ROIs, n, seq_lett_model)
+    grid = prediction(ROIs, n, seq_lett_model)
     
 
     """
@@ -613,12 +696,20 @@ def main():
     """
     
     # Define the initial state
-    problem=UniformColoring(initialize_state(grid))
+    problem=UniformColoring(initialize_state(grid),Heuristic.heuristic_color_use_most_present)
 
-    end = best_first_graph_search(problem, lambda n: n.path_cost, display=True)
-    print("Final state: \n",end.state.grid)
-    print("Solution cost:",end.path_cost)
-    print(end.solution())
+    start_time = time.time()
+    print("Compute uniform_cost_search...")
+    ucs = best_first_graph_search(problem, lambda node: node.path_cost)
+    print("--- %s seconds ---" % (time.time() - start_time))
+    print("Final state: \n",ucs.state.grid)
+    print("Solution cost:",ucs.path_cost)
+    print(ucs.solution())
+
+    astar = astar_search(problem, display=True)
+    print("Final state: \n",astar.state.grid)
+    print("Solution cost:",astar.path_cost)
+    print(astar.solution())
 
 if __name__ == "__main__":
     main()
