@@ -5,6 +5,7 @@ import cv2
 import datetime
 import os
 import time
+import signal
 from emnist import list_datasets
 from tensorflow import keras    
 from sklearn.metrics import confusion_matrix
@@ -41,6 +42,12 @@ colorazione, si chiede di trovare la sequenza di azioni dell'agente per raggiung
 La posizione iniziale della testina, la struttura della griglia e la colorazione iniziale delle celle sono
 passati al sistema tramite un'immagine.
 '''
+
+class TimeoutError(Exception):
+    pass
+
+def handler(signum, frame, time):
+    raise TimeoutError(f"Time expired!! Exceded {time} seconds")
 
 MOV_COST = 1
 
@@ -698,18 +705,34 @@ def main():
     # Define the initial state
     problem=UniformColoring(initialize_state(grid),Heuristic.heuristic_color_use_most_present)
 
-    start_time = time.time()
-    print("Compute uniform_cost_search...")
-    ucs = best_first_graph_search(problem, lambda node: node.path_cost)
-    print("--- %s seconds ---" % (time.time() - start_time))
-    print("Final state: \n",ucs.state.grid)
-    print("Solution cost:",ucs.path_cost)
-    print(ucs.solution())
+    t = 10
+    signal.signal(signal.SIGALRM, lambda signum, frame: handler(signum, frame, t))
+    signal.alarm(t)
+
+    try:
+        # function call for the UCS 
+        start_time = time.time()
+        print("Compute uniform_cost_search...")
+        ucs = best_first_graph_search(problem, lambda node: node.path_cost)
+        print("--- %s seconds ---" % (time.time() - start_time))
+        print("Final state: \n",ucs.state.grid)
+        print("Solution cost:",ucs.path_cost)
+        print(ucs.solution())
+    except TimeoutError as e:
+        # Exception handler if time is expired
+        print(e)
+    finally:
+        # Timer reset if the function returns before time 
+        signal.alarm(0)
+    
 
     astar = astar_search(problem, display=True)
     print("Final state: \n",astar.state.grid)
     print("Solution cost:",astar.path_cost)
     print(astar.solution())
+
+    # Delete all the files in the manipulated_grids folder after computing
+    os.system("find './manipulated_grids/' -name 'ROI_*' -exec rm {} \;")
 
 if __name__ == "__main__":
     main()
