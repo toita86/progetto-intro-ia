@@ -380,6 +380,8 @@ def create_model():
     return seq_lett_model
 
 def model_statistics(training_operation, X_test, y_test, seq_lett_model):
+    plot_path = f'./plots/'
+
     # Plot training & validation accuracy values
     plt.plot(training_operation.history['accuracy'])
     plt.plot(training_operation.history['val_accuracy'])
@@ -387,7 +389,9 @@ def model_statistics(training_operation, X_test, y_test, seq_lett_model):
     plt.ylabel('Accuracy')
     plt.xlabel('Epoch')
     plt.legend(['Train', 'Val'], loc='upper left')
-    plt.show()
+    plt.savefig(os.path.join(plot_path, 'accuracy_plot.png'))  # Saves confusion matrix to the plots folder
+    plt.close()
+
 
     # Plot training & validation loss values
     plt.plot(training_operation.history['loss'])
@@ -396,7 +400,8 @@ def model_statistics(training_operation, X_test, y_test, seq_lett_model):
     plt.ylabel('Loss')
     plt.xlabel('Epoch')
     plt.legend(['Train', 'Val'], loc='upper left')
-    plt.show()
+    plt.savefig(os.path.join(plot_path, 'loss_plot.png'), dpi=300)  # Imposta la risoluzione a 300 DPI
+    plt.close()
 
     # Evaluate the model's performance on the test data. 
     # The evaluate function returns the loss value and metrics values for the model in test mode.
@@ -432,8 +437,8 @@ def model_statistics(training_operation, X_test, y_test, seq_lett_model):
     # Plot the confusion matrix.
     disp.plot()
 
-    # Display the plot.
-    plt.show()
+    # Saves confusion matrix to the plots folder
+    plt.savefig(os.path.join(plot_path, 'confusion.png')) 
 
     from sklearn.metrics import classification_report
     print(classification_report(y_test, y_pred))
@@ -732,7 +737,7 @@ def main():
     print(astar.solution())
 
     # Delete all the files in the manipulated_grids folder after computing
-    os.system("find './manipulated_grids/' -name 'ROI_*' -exec rm {} \;")
+    #os.system("find './manipulated_grids/' -name 'ROI_*' -exec rm {} \;")
 
 if __name__ == "__main__":
     main()
