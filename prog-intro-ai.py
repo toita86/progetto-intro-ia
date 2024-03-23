@@ -6,11 +6,11 @@ import datetime
 import os
 import time
 import signal
+import warnings
 from emnist import list_datasets
-from tensorflow import keras    
+from tensorflow import keras
 from sklearn.metrics import confusion_matrix
 from sklearn.metrics import ConfusionMatrixDisplay
-from sklearn.metrics import classification_report
 from utils import *
 from search import *
 #from aima import Problem, Node #  Import aimacode from the aima-python library
@@ -263,7 +263,45 @@ def best_first_graph_search(problem, f, display=False):
                     frontier.append(child)
     return None
 
+def is_cycle(node):
+    current = node
+    while current.parent != None:
+        if current.parent.state.id == current.state.id:
+            return True
+        current = current.parent
+    return False
+
+def depth_limit_search(problem, limit):
+    frontier = [Node(problem.initial)]
+    explored = set()
+    while frontier:
+        node = frontier.pop()
+        if problem.goal_test(node.state):
+            return node
+        if node.depth < limit:
+            explored.add(node.state.id)
+            for child in node.expand(problem):
+                if child.state.id not in explored:
+                    frontier.append(child)
+        elif is_cycle(node):
+            return 'cutoff' + str(node.depth)
+    return None
+
+def iterative_deepening_search(problem):
+    print("\n")
+    print("Compute iterative_deepening_search...")
+    start_time = time.time()
+    for depth in range(sys.maxsize):
+        result = depth_limit_search(problem, depth)
+        if result != None:
+            print("--- %s seconds ---" % (time.time() - start_time))
+            print("\n")
+            print("\n")
+            return result
+    return None
+
 def astar_search(problem, h=None, display=True): 
+    print("\n")
     print("Compute astar_search...")
     """A* search is best-first graph search with f(n) = g(n)+h(n).
     You need to specify the h function when you call astar_search, or
@@ -272,6 +310,22 @@ def astar_search(problem, h=None, display=True):
     h = memoize(h or problem.h, 'h')
     end = best_first_graph_search(problem, lambda n: n.path_cost + h(n), display)
     print("--- %s seconds ---" % (time.time() - start_time))
+    print("\n")
+    print("\n")
+    return end
+
+def greedy_search(problem, h=None, display=True):
+    print("\n")
+    print("Compute greedy_search...")
+    """
+    Greedy best-first search is accomplished by specifying f(n) = h(n).
+    """
+    start_time = time.time()
+    h = memoize(h or problem.h, 'h')
+    end = best_first_graph_search(problem, lambda n: h(n), display)
+    print("--- %s seconds ---" % (time.time() - start_time))
+    print("\n")
+    print("\n")
     return end
 
 def initialize_state(grid):
@@ -444,7 +498,7 @@ def model_statistics(training_operation, X_test, y_test, seq_lett_model):
     print(classification_report(y_test, y_pred))
 
 def train_model():
-# Extract the training and test samples from the EMNIST dataset
+    # Extract the training and test samples from the EMNIST dataset
     X_train, y_train = extract_training_samples('balanced')
     X_test, y_test = extract_test_samples('balanced')
 
@@ -478,10 +532,10 @@ def train_model():
     seq_lett_model = create_model()
 
     # Set the batch size. This is the number of samples that will be passed through the network at once.
-    batch_size = 32
+    batch_size = 128
 
     # Set the number of epochs. An epoch is one complete pass through the entire training dataset.
-    epochs = 15
+    epochs = 25
 
     # Compile the model. 
     # We use the sparse_categorical_crossentropy loss function, which is suitable for multi-class classification problems.
@@ -492,7 +546,7 @@ def train_model():
     # Fit the model to the training data. 
     # We also specify a validation split of 0.1, meaning that 10% of the training data will be used as validation data.
     # The model's performance is evaluated on this validation data at the end of each epoch.
-    early_stopping = keras.callbacks.EarlyStopping(monitor='val_loss', patience=3, restore_best_weights=True)
+    early_stopping = keras.callbacks.EarlyStopping(monitor='val_loss', patience=2, restore_best_weights=True)
     training_operation = seq_lett_model.fit(
         X_train, y_train_library, 
         batch_size=batch_size, 
@@ -589,6 +643,11 @@ def extract_ROIs(contours, original, coefficient):
     yt = None  # y-coordinate of the previous ROI
     n = 1  # count of ROIs with the same y-coordinate
     tolerance = 10  # tolerance for the y-coordinate
+
+    # Sort contours by their y-coordinate, then by their x-coordinate
+    contours = list(contours)
+    contours.sort(key=lambda c: (cv2.boundingRect(c)[1], cv2.boundingRect(c)[0]))
+
     for i in contours:
         area = cv2.contourArea(i)
         if area > MIN_CONTOUR_AREA:
@@ -645,14 +704,16 @@ def prediction(ROIs, n, seq_lett_model):
     nrow = int(nrow)
 
     mat = np.array(list(reversed(l)))
-    grid = mat.reshape(nrow, n)
+    if nrow == 1:
+        grid = mat.reshape(nrow, n-1)  
+    else:
+        grid = mat.reshape(nrow, n)
 
     label_mapping = {0: 'T', 1: 'B', 2: 'Y', 3: 'G'}
     show = np.vectorize(label_mapping.get)(grid)
     print(show)
-    #os.system("find './manipulated_grids/' -name 'ROI_*' -exec rm {} \;")'''
-    return grid
 
+    return grid
 
 def main():
     #ask user terminale input for training model
@@ -664,43 +725,52 @@ def main():
     # Load the trained model from the file
     seq_lett_model = keras.models.load_model('seq_lett_model.keras')
 
-    # Delete all the files in the manipulated_grids folder
-    os.system("find './manipulated_grids/' -name 'ROI_*' -exec rm {} \;")
+    while True:
+        try:
+            warnings.filterwarnings("ignore")
+            # Delete all the files in the manipulated_grids folder
+            os.system("find './manipulated_grids/' -name 'ROI_*' -exec rm {} \;")
+            # Ask user to take a picture of the grid or if they want to use a default image from file explorer
+            if input("Do you want to take a picture of the grid? If you press n you have to pick an image from your filesystem (y/n): ") == 'y':
+                frame = capture_image_from_webcam()
+                timestamp = datetime.datetime.now().strftime('%Y-%m-%d_%H-%M-%S')
+                image_path = f'./grids/grid_{timestamp}.png'
 
-    # Ask user to take a picture of the grid or if they want to use a default image from file explorer
-    if input("Do you want to take a picture of the grid? If you press n you have to pick an image from your filesystem (y/n): ") == 'y':
-        frame = capture_image_from_webcam()
-        timestamp = datetime.datetime.now().strftime('%Y-%m-%d_%H-%M-%S')
-        image_path = f'./grids/grid_{timestamp}.png'
+                save_image(frame, image_path)
+            else:
+                path = input("Enter the name of the image: ")
+                image_path = f'./grids/{path}.png'
 
-        save_image(frame, image_path)
-    else:
-        path = input("Enter the name of the image: ")
-        image_path = f'./grids/{path}.png'
+            # Load the image
+            image = cv2.imread(image_path)
+            if image is None:
+                raise Exception(f"Error loading image: {image_path}")
 
-    # Load the image
-    image = cv2.imread(image_path)
-    if image is None:
-        print(f"Error loading image: image_path")
-        return
-    processed_image = preprocess_image_for_detection(image)
-    #canny = cv2.Canny(np.asarray(processed_image), 0, 200)
-    contours, _ = cv2.findContours(processed_image, cv2.RETR_TREE, cv2.CHAIN_APPROX_SIMPLE)
-    #largest_contour = find_largest_contour(contours)
-    ROIs, n = extract_ROIs(contours, image.copy(), 0.02)
+            processed_image = preprocess_image_for_detection(image)
 
-    # Save the ROIs to the manipulated_grids folder
-    for i, ROI in enumerate(ROIs):
-        save_image(ROI, f'./manipulated_grids/ROI_{i}.png')
+            contours, _ = cv2.findContours(processed_image, cv2.RETR_TREE, cv2.CHAIN_APPROX_SIMPLE)
+            #contours = sorted(contours, key=cv2.contourArea, reverse=True)
+            ROIs, n = extract_ROIs(contours, image.copy(), 0.02)
 
-    grid = prediction(ROIs, n, seq_lett_model)
-    
+            # Save the ROIs to the manipulated_grids folder
+            for i, ROI in enumerate(ROIs):
+                save_image(ROI, f'./manipulated_grids/ROI_{i}.png')
+
+            grid = prediction(ROIs, n, seq_lett_model)
+
+            break
+        except Exception as e:
+            print(f"An error occurred: {e}")
+            retry = input("Do you want to retry? (y/n): ")
+            if retry.lower() != 'y':
+                sys.exit(1)                
 
     """
     grid=np.array([
-        [0, 2, 1], 
-        [2, 3, 2],
-        [1, 2, 3],])
+        [0, 3, 3], 
+        [3, 3, 2],
+        [3, 3, 3],])
+    
     grid=np.array([[2, 1, 2, 3, 1],
         [2, 3, 1, 3, 1],
         [0, 1, 2, 3, 2],
@@ -719,8 +789,10 @@ def main():
         start_time = time.time()
         print("Compute uniform_cost_search...")
         ucs = best_first_graph_search(problem, lambda node: node.path_cost)
+        print("\n")
         print("--- %s seconds ---" % (time.time() - start_time))
         print("Final state: \n",ucs.state.grid)
+        print("\n")
         print("Solution cost:",ucs.path_cost)
         print(ucs.solution())
     except TimeoutError as e:
@@ -729,15 +801,43 @@ def main():
     finally:
         # Timer reset if the function returns before time 
         signal.alarm(0)
-    
+
+    signal.signal(signal.SIGALRM, lambda signum, frame: handler(signum, frame, t))
+    signal.alarm(t)
+        
+    try:
+        # function call for the ids 
+        start_time = time.time()
+        ids = iterative_deepening_search(problem)
+        print("Final state: \n",ids.state.grid)
+        print("\n")
+        print("Solution cost:",ids.path_cost)
+        print("\n")
+        print(ids.solution())
+    except TimeoutError as e:
+        # Exception handler if time is expired
+        print(e)
+    finally:
+        # Timer reset if the function returns before time 
+        signal.alarm(0)
 
     astar = astar_search(problem, display=True)
     print("Final state: \n",astar.state.grid)
+    print("\n")
     print("Solution cost:",astar.path_cost)
+    print("\n")
     print(astar.solution())
+
+    greedy = greedy_search(problem, display=True)
+    print("Final state: \n",greedy.state.grid)
+    print("\n")
+    print("Solution cost:",greedy.path_cost)
+    print("\n")
+    print(greedy.solution())
 
     # Delete all the files in the manipulated_grids folder after computing
     #os.system("find './manipulated_grids/' -name 'ROI_*' -exec rm {} \;")
+
 
 if __name__ == "__main__":
     main()
