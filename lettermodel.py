@@ -246,7 +246,15 @@ def capture_image_from_webcam():
         numpy.ndarray: The captured frame from the webcam.
     """
     global save_frame
-    cap = cv2.VideoCapture(0)
+
+    import platform
+    # Determina il dispositivo video in base al sistema operativo
+    if platform.system() == 'Linux':
+        video_device = 0
+    else:
+        video_device = 1
+
+    cap = cv2.VideoCapture(video_device)
     while True:
         success, frame = cap.read()  # Legge un frame dalla telecamera
         if not success:
