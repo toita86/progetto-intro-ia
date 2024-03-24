@@ -3,6 +3,7 @@ import numpy as np
 import matplotlib.pyplot as plt
 import cv2
 import os
+import datetime
 from emnist import list_datasets
 from tensorflow import keras
 from sklearn.metrics import confusion_matrix
@@ -17,6 +18,8 @@ from emnist import extract_test_samples
 LABELS = ['0', '1', '2', '3', '4', '5', '6', '7', '8', '9', 
           'A', 'B', 'C', 'D', 'E', 'F', 'G', 'H', 'I', 'J', 'K', 'L', 'M', 'N', 'O', 'P', 'Q', 'R', 'S', 'T', 'U', 'V', 'W', 'X', 'Y', 'Z',
           'a', 'b', 'd', 'e', 'f', 'g', 'h', 'n', 'q', 'r', 't']
+
+save_frame = False
 
 # Define a function to remodulate the labels
 def remodulate(y):
@@ -242,27 +245,22 @@ def capture_image_from_webcam():
     Returns:
         numpy.ndarray: The captured frame from the webcam.
     """
-    import platform
-    # Determina il dispositivo video in base al sistema operativo
-    if platform.system() == 'Linux':
-        video_device = 0
-    else:
-        video_device = 1
-
-    # Crea l'oggetto VideoCapture utilizzando il dispositivo video appropriato
-    cap = cv2.VideoCapture(video_device)
-
+    global save_frame
+    cap = cv2.VideoCapture(0)
     while True:
-        ret, frame = cap.read()
-        if ret:
-            cv2.imshow('Input', frame)
-            if cv2.waitKey(1) & 0xFF == ord('q'):
-                break
-        else:
+        success, frame = cap.read()  # Legge un frame dalla telecamera
+        if not success:
             break
-    cap.release()
-    cv2.destroyAllWindows()
-    return frame
+        else:
+            ret, buffer = cv2.imencode('.png', frame)  # Codifica il frame in formato PNG
+            byte_frame = buffer.tobytes()
+            if save_frame:
+                timestamp = datetime.datetime.now().strftime('%Y-%m-%d_%H-%M-%S')
+                image_path = f'./grids/grid_{timestamp}.png'
+                cv2.imwrite(image_path, frame)
+                save_frame = False
+            yield (b'--frame\r\n'
+                   b'Content-Type: image/png\r\n\r\n' + byte_frame + b'\r\n')  # Restituisce il frame come un'immagine PNG
 
 def save_image(image, filename):
     cv2.imwrite(filename, image)

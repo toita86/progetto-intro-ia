@@ -33,7 +33,6 @@ passati al sistema tramite un'immagine.
 '''
 
 app = Flask(__name__)
-camera = cv2.VideoCapture(0)
 
 class TimeoutError(Exception):
     pass
@@ -164,24 +163,18 @@ def main():
     # Delete all the files in the manipulated_grids folder after computing
     #os.system("find './manipulated_grids/' -name 'ROI_*' -exec rm {} \;")
 
-def generate_frames():
-    while True:
-        success, frame = camera.read()  # Legge un frame dalla telecamera
-        if not success:
-            break
-        else:
-            ret, buffer = cv2.imencode('.png', frame)  # Codifica il frame in formato PNG
-            frame = buffer.tobytes()
-            yield (b'--frame\r\n'
-                   b'Content-Type: image/png\r\n\r\n' + frame + b'\r\n')  # Restituisce il frame come un'immagine PNG
-
 @app.route('/')
 def index():
     return render_template('index.html')
 
 @app.route('/video_feed')
 def video_feed():
-    return Response(generate_frames(), mimetype='multipart/x-mixed-replace; boundary=frame')
+    return Response(lm.capture_image_from_webcam(), mimetype='multipart/x-mixed-replace; boundary=frame')
+
+@app.route('/save_image', methods=['POST'])
+def save_image():
+    lm.save_frame = True
+    return 'OK', 200
 
 if __name__ == "__main__":
     #main()
