@@ -243,21 +243,15 @@ def depth_limit_search(problem, limit):
     return None
 
 def iterative_deepening_search(problem):
-    print("\n")
-    print("Compute iterative_deepening_search...")
     start_time = time.time()
     for depth in range(sys.maxsize):
         result = depth_limit_search(problem, depth)
         if result != None:
             print("--- %s seconds ---" % (time.time() - start_time))
-            print("\n")
-            print("\n")
             return result
     return None
 
 def astar_search(problem, h=None, display=True): 
-    print("\n")
-    print("Compute astar_search...")
     """A* search is best-first graph search with f(n) = g(n)+h(n).
     You need to specify the h function when you call astar_search, or
     else in your Problem subclass."""
@@ -265,13 +259,9 @@ def astar_search(problem, h=None, display=True):
     h = memoize(h or problem.h, 'h')
     end = best_first_graph_search(problem, lambda n: n.path_cost + h(n), display)
     print("--- %s seconds ---" % (time.time() - start_time))
-    print("\n")
-    print("\n")
     return end
 
 def greedy_search(problem, h=None, display=True):
-    print("\n")
-    print("Compute greedy_search...")
     """
     Greedy best-first search is accomplished by specifying f(n) = h(n).
     """
@@ -279,8 +269,6 @@ def greedy_search(problem, h=None, display=True):
     h = memoize(h or problem.h, 'h')
     end = best_first_graph_search(problem, lambda n: h(n), display)
     print("--- %s seconds ---" % (time.time() - start_time))
-    print("\n")
-    print("\n")
     return end
 
 def initialize_state(grid):

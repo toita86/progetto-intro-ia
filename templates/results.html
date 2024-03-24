@@ -1,0 +1,72 @@
+<div class="container-fluid text-justify pd-3">
+  <div>
+    <h2>Prediction</h2>
+    <table class="table-bordered">
+      {% for row in grid %}
+      <tr>
+        {% for cell in row %}
+        <td>{{ cell }}</td>
+        {% endfor %}
+      </tr>
+      {% endfor %}
+    </table>
+  </div>
+  <div class>
+    <h3 class="text-primary font-weight-bold">UCS Results</h3>
+    <table class="table-bordered">
+      {% for row in ucs.state.grid %}
+      <tr>
+        {% for cell in row %}
+        <td>{{ cell }}</td>
+        {% endfor %}
+      </tr>
+      {% endfor %}
+    </table>
+    <p>Solution cost: {{ ucs.path_cost }}</p>
+    <p>Solution: {{ ucs.solution() }}</p>
+  </div>
+  <div>
+    <h3 class="text-primary font-weight-bold">IDS Results</h3>
+    <table class="table-bordered">
+      {% for row in ids.state.grid %}
+      <tr>
+        {% for cell in row %}
+        <td>{{ cell }}</td>
+        {% endfor %}
+      </tr>
+      {% endfor %}
+    </table>
+    <p>Solution cost: {{ ids.path_cost }}</p>
+    <p>Solution: {{ ids.solution() }}</p>
+  </div>
+  <div>
+    <h3 class="text-primary font-weight-bold">A* Results</h3>
+    <table class="table-bordered">
+      {% for row in astar.state.grid %}
+      <tr>
+        {% for cell in row %}
+        <td>{{ cell }}</td>
+        {% endfor %}
+      </tr>
+      {% endfor %}
+    </table>
+    <p>Solution cost: {{ astar.path_cost }}</p>
+    <p>Solution: {{ astar.solution() }}</p>
+  </div>
+  <div>
+    <h3 class="text-primary font-weight-bold">
+      Greedy Best First Search Results
+    </h3>
+    <table class="table-bordered">
+      {% for row in greedy.state.grid %}
+      <tr>
+        {% for cell in row %}
+        <td>{{ cell }}</td>
+        {% endfor %}
+      </tr>
+      {% endfor %}
+    </table>
+    <p>Solution cost: {{ greedy.path_cost }}</p>
+    <p>Solution: {{ greedy.solution() }}</p>
+  </div>
+</div>
