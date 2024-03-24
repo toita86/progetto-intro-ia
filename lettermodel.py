@@ -259,6 +259,7 @@ def capture_image_from_webcam():
                 image_path = f'./grids/grid_{timestamp}.png'
                 cv2.imwrite(image_path, frame)
                 save_frame = False
+                return frame
             yield (b'--frame\r\n'
                    b'Content-Type: image/png\r\n\r\n' + byte_frame + b'\r\n')  # Restituisce il frame come un'immagine PNG
 
@@ -374,9 +375,5 @@ def prediction(ROIs, n, seq_lett_model):
         grid = mat.reshape(nrow, n-1)  
     else:
         grid = mat.reshape(nrow, n)
-
-    label_mapping = {0: 'T', 1: 'B', 2: 'Y', 3: 'G'}
-    show = np.vectorize(label_mapping.get)(grid)
-    print(show)
 
     return grid

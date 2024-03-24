@@ -49,11 +49,14 @@
       class="container d-flex flex-column justify-content-center align-items-center vh-50"
     >
       <img
-        class="img-fluid img-beautifier"
+        class="img-fluid"
         src="{{url_for('video_feed')}}"
         alt="100%"
+        width="800px"
+        style="border-radius: 15px"
       />
     </div>
+    <div id="results"></div>
     <div class="container text-center">
       <button
         style="
@@ -70,11 +73,35 @@
         <span class="rainbow">Save image</span>
       </button>
     </div>
+    <div class="container text-center">
+      <button
+        id="process-image-button"
+        style="
+          padding: 15px;
+          margin: 15px;
+          border-radius: 15px;
+          width: 300px;
+          font-weight: bolder;
+          font-size: larger;
+        "
+        style="font-size: large; border-radius: 15px"
+      >
+        <span class="rainbow">Process image</span>
+      </button>
+    </div>
 
     <script>
       function saveImage() {
         fetch("/save_image", { method: "POST" });
       }
+    </script>
+    <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.5.1/jquery.min.js"></script>
+    <script>
+      $("#process-image-button").click(function () {
+        $.post("/process_image", function (data) {
+          $("#results").html(data);
+        });
+      });
     </script>
     <footer class="footer mt-auto py-3 bg-dark text-white">
       <div class="container text-center" style="bottom: 0">
@@ -85,11 +112,6 @@
     </footer>
   </body>
   <style>
-    .img-beautifier {
-      border-radius: 20px;
-      border: 5px solid black;
-    }
-
     .rainbow {
       background-image: linear-gradient(
         to right,
