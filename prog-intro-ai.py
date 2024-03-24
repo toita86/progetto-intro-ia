@@ -1,25 +1,14 @@
-import tensorflow as tf
-import numpy as np
-import matplotlib.pyplot as plt
-import cv2
-import datetime
+import uniformcoloring as uc
+import lettermodel as lm
 import os
+import sys
 import time
+import datetime
+import cv2
+import numpy as np
 import signal
 import warnings
-from emnist import list_datasets
-from tensorflow import keras
-from sklearn.metrics import confusion_matrix
-from sklearn.metrics import ConfusionMatrixDisplay
-from utils import *
-from search import *
-#from aima import Problem, Node #  Import aimacode from the aima-python library
-from enum import Enum
-
-
-# Import the necessary functions from the emnist library
-from emnist import extract_training_samples
-from emnist import extract_test_samples
+from flask import Flask, Response, render_template
 
 '''
 Uniform Coloring è un dominio in cui si hanno a disposizione alcune celle da colorare, e vari colori
@@ -43,700 +32,37 @@ La posizione iniziale della testina, la struttura della griglia e la colorazione
 passati al sistema tramite un'immagine.
 '''
 
+app = Flask(__name__)
+camera = cv2.VideoCapture(0)
+
 class TimeoutError(Exception):
     pass
 
 def handler(signum, frame, time):
     raise TimeoutError(f"Time expired!! Exceded {time} seconds")
 
-MOV_COST = 1
-
-class Colors(Enum):
-    BLUE = 1
-    YELLOW = 2
-    GREEN = 3
-
-class Directions(Enum):
-    UP = (-1, 0)
-    DOWN = (1, 0)
-    LEFT = (0, -1)
-    RIGHT = (0, 1)
-
-class Heuristic(Enum):
-    heuristic_color_use_most_present = 1
-
-class State():
-    def __init__(self, grid, i, j):
-        self.grid = grid
-        self.i = i # row
-        self.j = j # column
-        self.id = str(i)+str(j)
-        for row in grid:
-            for tile in row:
-                self.id = self.id+str(tile)
-    
-    def __lt__(self, state):
-        return False
-
-class UniformColoring(Problem):
-    """The abstract class for a formal problem.  You should subclass this and
-    implement the method successor, and possibly __init__, goal_test, and
-    path_cost. Then you will create instances of your subclass and solve them
-    with the various search functions."""
-
-    def __init__(self, initial, heuristic_type):
-        """The constructor specifies the initial state, and possibly a goal
-        state, if there is a unique goal.  Your subclass's constructor can add
-        other arguments."""
-        self.initial = initial
-        self.heuristic_type = heuristic_type
-    
-    def actions(self, state):
-        """Return the actions that can be executed in the given
-        state. The result would typically be a list, but if there are many
-        actions, consider yielding them one at a time in an iterator, rather
-        than building them all at once."""
-        actions=[]
-        if (state.i != self.initial.i) or (state.j != self.initial.j):
-            for color in Colors:  # action color tile
-                if (color.value != state.grid[state.i][state.j]):
-                    actions.append(color)
-        for direction in Directions:  # action move
-            coords=(state.i+direction.value[0],state.j+direction.value[1])
-            if coords[0] in range(state.grid.shape[0]) and coords[1] in range(state.grid.shape[1]):
-                actions.append(direction)
-        return actions
-    
-    def result(self, state, action):
-        """Return the state that results from executing the given
-        action in the given state. The action must be one of
-        self.actions(state)."""
-        if action in Directions:
-            return State(state.grid,state.i+action.value[0],state.j+action.value[1])
-        else:
-            grid=np.copy(state.grid)
-            grid[state.i][state.j]=action.value
-            return State(grid,state.i,state.j)
-
-    def goal_test(self, state):
-        """Return True if the state is a goal. The default method compares the
-        state to self.goal, as specified in the constructor. Implement this
-        method if checking against a single self.goal is not enough."""
-        test_color = None
-        if ((state.i, state.j) == (self.initial.i, self.initial.j)):  # if it's back at the start position
-            for color in Colors:
-                if color.value in state.grid:
-                    if test_color == None:
-                        test_color = color.value
-                    if color.value != test_color:
-                        return False
-        else:
-            return False
-        return True
-
-    def path_cost(self, c, state1, action, state2):
-        """Return the cost of a solution path that arrives at state2 from
-        state1 via action, assuming cost c to get up to state1. If the problem
-        is such that the path doesn't matter, this function will only look at
-        state2.  If the path does matter, it will consider c and maybe state1
-        and action. The default method costs 1 for every step in the path."""
-        if action in Colors:
-            return c + action.value
-        return c + MOV_COST
-    
-    def color_initial_choice(self, node):
-        # count the number of each color in the grid
-        colors = {
-            Colors.BLUE.value: 0, 
-            Colors.YELLOW.value: 0, 
-            Colors.GREEN.value: 0
-        }
-        for row in node.state.grid:
-            for tile in row:
-                if tile == 0: #0 corresponds to the initial position T
-                    continue
-                colors[tile] += 1
-
-        num_tot_grid = (node.state.grid.shape[0] * node.state.grid.shape[1]) -1
-        res = []
-        for color in colors:
-            res.append((num_tot_grid - colors[color])*2)
-        
-        return res.index(min(res)) + 1
-    
-    def manhattan_distance(self, coord1, coord2):
-        return abs(coord2[0] - coord1[0]) + abs(coord2[1] - coord1[1])
-    
-    def heuristic(self, node, color_choice):
-        if self.heuristic_type == Heuristic.heuristic_color_use_most_present:
-            return self.heuristic_color_use_most_present(node, color_choice)
-    
-    def heuristic_color_use_most_present(self, node, color_choice):
-        """Return the heuristic value for a given state. Default heuristic
-        function is 0."""
-        h = 0
-        grid = node.state.grid
-        not_colored = []
-        starting_point = []
-        for i in range(grid.shape[0]):
-            for j in range(grid.shape[1]):
-                if(grid[i][j] != color_choice and grid[i][j] != 0):
-                    not_colored.append((i, j))
-                    h += color_choice
-                if(grid[i][j] == 0):
-                    starting_point.append((i, j))
-        i = node.state.i
-        j = node.state.j
-
-        for to_color in not_colored:
-            h += self.manhattan_distance((i, j), to_color)
-        
-        return h
-    
-    def h(self, node):
-        """Return the heuristic value for a given state."""
-        i,j=(node.state.i,node.state.j)
-        color_choice = self.color_initial_choice(node)
-        if node.action != None and node.action in Colors:
-            return self.heuristic(node, color_choice)
-        parent=node.parent
-        color=None
-        #If the action is in Directions the heuristic evaluation is based on the parent color
-        if parent != None:
-            color=parent.state.grid[parent.state.i][parent.state.j]
-        if (i,j) == (self.initial.i,self.initial.j) or color==0: #If I don't have a parent color, i choose the one that minimizes the Heuristic value
-            h = None
-            for color in Colors:
-                temp_h = self.heuristic(node, color.value)
-                if h == None:
-                    h=temp_h
-                if temp_h < h:
-                    h = temp_h
-            #print("Heuristic 0,0 value:", h)
-            return h
-        else:
-            h = self.heuristic(node, color)
-            #print("Heuristic value:", h, node.state.grid, i,j)
-            return h
-
-
-    def value(self):
-        """For optimization problems, each state has a value.  Hill-climbing
-        and related algorithms try to maximize this value."""
-        raise NotImplementedError
-    
-def best_first_graph_search(problem, f, display=False):
-    """Search the nodes with the lowest f scores first.
-    You specify the function f(node) that you want to minimize; for example,
-    if f is a heuristic estimate to the goal, then we have greedy best
-    first search; if f is node.depth then we have breadth-first search.
-    There is a subtlety: the line "f = memoize(f, 'f')" means that the f
-    values will be cached on the nodes as they are computed. So after doing
-    a best first search you can examine the f values of the path returned."""
-    f = memoize(f, 'f')
-    node = Node(problem.initial)
-    #print("#COORDS0:", node.state.i, node.state.j, node.state.grid)
-    frontier = PriorityQueue('min', f)
-    frontier.append(node)
-    lookup_frontier=set()
-    lookup_frontier.add(id(node))
-    explored = set()
-    while frontier:
-        #print("frontiera:", len(frontier))
-        node = frontier.pop()
-        #print("#NODE:", node.state.i, node.state.j, node.state.grid)
-        lookup_frontier.remove(id(node))
-        if problem.goal_test(node.state):
-            if display:
-                print(len(explored), "paths have been expanded and", len(frontier), "paths remain in the frontier")
-            return node
-        explored.add(node.state.id)
-        for child in node.expand(problem):
-            #print("#CHILD:", node.state.i, node.state.j, node.state.grid)
-            if child.state.id not in explored and id(child) not in lookup_frontier:
-                lookup_frontier.add(id(child))
-                frontier.append(child)
-            elif id(child) in lookup_frontier:
-                if f(child) < frontier[child]:
-                    del frontier[child]
-                    lookup_frontier.add(id(child))
-                    frontier.append(child)
-    return None
-
-def is_cycle(node):
-    current = node
-    while current.parent != None:
-        if current.parent.state.id == current.state.id:
-            return True
-        current = current.parent
-    return False
-
-def depth_limit_search(problem, limit):
-    frontier = [Node(problem.initial)]
-    explored = set()
-    while frontier:
-        node = frontier.pop()
-        if problem.goal_test(node.state):
-            return node
-        if node.depth < limit:
-            explored.add(node.state.id)
-            for child in node.expand(problem):
-                if child.state.id not in explored:
-                    frontier.append(child)
-        elif is_cycle(node):
-            return 'cutoff' + str(node.depth)
-    return None
-
-def iterative_deepening_search(problem):
-    print("\n")
-    print("Compute iterative_deepening_search...")
-    start_time = time.time()
-    for depth in range(sys.maxsize):
-        result = depth_limit_search(problem, depth)
-        if result != None:
-            print("--- %s seconds ---" % (time.time() - start_time))
-            print("\n")
-            print("\n")
-            return result
-    return None
-
-def astar_search(problem, h=None, display=True): 
-    print("\n")
-    print("Compute astar_search...")
-    """A* search is best-first graph search with f(n) = g(n)+h(n).
-    You need to specify the h function when you call astar_search, or
-    else in your Problem subclass."""
-    start_time = time.time()
-    h = memoize(h or problem.h, 'h')
-    end = best_first_graph_search(problem, lambda n: n.path_cost + h(n), display)
-    print("--- %s seconds ---" % (time.time() - start_time))
-    print("\n")
-    print("\n")
-    return end
-
-def greedy_search(problem, h=None, display=True):
-    print("\n")
-    print("Compute greedy_search...")
-    """
-    Greedy best-first search is accomplished by specifying f(n) = h(n).
-    """
-    start_time = time.time()
-    h = memoize(h or problem.h, 'h')
-    end = best_first_graph_search(problem, lambda n: h(n), display)
-    print("--- %s seconds ---" % (time.time() - start_time))
-    print("\n")
-    print("\n")
-    return end
-
-def initialize_state(grid):
-    for i in range(grid.shape[0]):
-        for j in range(grid.shape[1]):
-            if grid[i][j]==0:
-                return State(grid,i,j)
-    return None
-
-
-# Define the labels for the EMNIST dataset
-LABELS = ['0', '1', '2', '3', '4', '5', '6', '7', '8', '9', 
-          'A', 'B', 'C', 'D', 'E', 'F', 'G', 'H', 'I', 'J', 'K', 'L', 'M', 'N', 'O', 'P', 'Q', 'R', 'S', 'T', 'U', 'V', 'W', 'X', 'Y', 'Z',
-          'a', 'b', 'd', 'e', 'f', 'g', 'h', 'n', 'q', 'r', 't']
-
-# Define a function to remodulate the labels
-def remodulate(y):
-    """
-    Remodulates the input array 'y' based on the labels.
-
-    Parameters:
-    - y (numpy.ndarray): The input array to be remodulated.
-
-    Returns:
-    - numpy.ndarray: The remodulated array.
-    """
-    # Replace the labels 'T', 'B', 'Y', 'G' with 0, 1, 2, 3 respectively
-    # Define a dictionary to map the labels to their new values
-    label_map = {"T": 0, "B": 1, "Y": 2, "G": 3}
-
-    # Loop through the label_map to replace the labels with their new values
-    for label, value in label_map.items():
-        y = np.where(y == LABELS.index(label), value, y)
-
-    return y
-
-# Define a function to filter the dataset based on specific label conditions
-def filterDataset(X_data, y_data):
-    """
-    Filters the dataset based on lables we need to use (T, B, G, Y).
-
-    Args:
-        X_data (ndarray): Input data array of shape (n_samples, 28, 28).
-        y_data (ndarray): Target labels array of shape (n_samples,).
-
-    Returns:
-        tuple: A tuple containing the filtered input data array and target labels array.
-
-    Raises:
-        AssertionError: If the dtype of y_data is not np.uint8.
-    """
-    # Assert that the dtype of y_data is np.uint8
-    assert y_data.dtype == np.uint8
-    # Define the classes
-    classes = LABELS
-    # Initialize the new_data_size
-    new_data_size = 0
-    # Initialize the new_data_index
-    new_data_index = 0
-
-    # Loop through the y_data to count the number of records with labels 'B', 'Y', 'G', 'T'
-    for recordIndex in range(0, y_data.shape[0]):
-        currentLabel = classes[y_data[recordIndex]]
-        if currentLabel == 'B' or currentLabel == 'Y' or currentLabel == 'G' or currentLabel == 'T':
-            new_data_size += 1
-    
-    # Initialize the new_X_data and new_y_data with zeros
-    new_X_data = np.zeros((new_data_size, 28, 28), dtype = X_data.dtype)
-    new_y_data = np.zeros((new_data_size,), dtype = np.uint8)
-
-    # Loop through the y_data to filter the records with labels 'B', 'Y', 'G', 'T'
-    for recordIndex in range(0, y_data.shape[0]):
-        currentLabel = classes[y_data[recordIndex]]
-
-        if currentLabel != 'B' and currentLabel != 'Y' and currentLabel != 'G' and currentLabel != 'T':
-            continue
-        
-        new_X_data[new_data_index] = X_data[recordIndex]
-        new_y_data[new_data_index] = y_data[recordIndex]
-        new_data_index += 1
-    
-    # Assert that the new_data_index is equal to the shape of new_X_data
-    assert new_data_index == new_X_data.shape[0]
-    return (new_X_data, new_y_data)
-
-def create_model():
-    """
-    Creates a convolutional neural network model for image classification.
-
-    Returns:
-        keras.Sequential: The created model.
-    """
-    seq_lett_model = keras.Sequential([
-        keras.Input(shape=(28, 28, 1)), # Input shape: 28x28 pixels, 1 color channel
-        keras.layers.Conv2D(28, (3, 3), activation='relu'),
-        keras.layers.MaxPooling2D((2, 2)),
-        keras.layers.Conv2D(128, (3, 3), activation='relu'),
-        keras.layers.MaxPooling2D((2, 2)),
-        keras.layers.Conv2D(128, (3, 3), activation='relu'),
-        keras.layers.Flatten(),
-        keras.layers.Dense(128, activation='relu'),
-        keras.layers.Dropout(0.5),
-        keras.layers.Dense(4, activation='softmax')  # Output layer for 4 letters
-    ])
-    seq_lett_model.summary()
-    return seq_lett_model
-
-def model_statistics(training_operation, X_test, y_test, seq_lett_model):
-    plot_path = f'./plots/'
-
-    # Plot training & validation accuracy values
-    plt.plot(training_operation.history['accuracy'])
-    plt.plot(training_operation.history['val_accuracy'])
-    plt.title('Model accuracy')
-    plt.ylabel('Accuracy')
-    plt.xlabel('Epoch')
-    plt.legend(['Train', 'Val'], loc='upper left')
-    plt.savefig(os.path.join(plot_path, 'accuracy_plot.png'))  # Saves confusion matrix to the plots folder
-    plt.close()
-
-
-    # Plot training & validation loss values
-    plt.plot(training_operation.history['loss'])
-    plt.plot(training_operation.history['val_loss'])
-    plt.title('Model loss')
-    plt.ylabel('Loss')
-    plt.xlabel('Epoch')
-    plt.legend(['Train', 'Val'], loc='upper left')
-    plt.savefig(os.path.join(plot_path, 'loss_plot.png'), dpi=300)  # Imposta la risoluzione a 300 DPI
-    plt.close()
-
-    # Evaluate the model's performance on the test data. 
-    # The evaluate function returns the loss value and metrics values for the model in test mode.
-    # We set verbose=0 to avoid logging the detailed output during the evaluation.
-    loss, accuracy =  seq_lett_model.evaluate(X_test, y_test, verbose=0)
-
-    # Print the loss value that the model achieved on the test data.
-    # The loss value represents how well the model can estimate the target variables. Lower values are better.
-    print("Test loss:", loss)
-
-    # Print the accuracy that the model achieved on the test data.
-    # The accuracy is the proportion of correct predictions that the model made. Higher values are better.
-    print("Test accuracy:", accuracy)
-
-    # Use the trained model to make predictions on the test data.
-    # The predict function returns the output of the last layer in the model, which in this case is the output of the softmax layer.
-    y_pred = seq_lett_model.predict(X_test)
-
-    # The output of the softmax layer is a vector of probabilities for each class. 
-    # We use the argmax function to find the index of the maximum probability, which gives us the predicted class.
-    y_pred = np.argmax(y_pred, axis = 1)
-
-    # Compute the confusion matrix to evaluate the accuracy of the classification.
-    # The confusion matrix is a table that is often used to describe the performance of a classification model.
-    # Each row of the matrix represents the instances in a predicted class, while each column represents the instances in an actual class.
-    # The 'normalize' parameter is set to 'true', which means the confusion matrix will be normalized by row (i.e., by the number of samples in each class).
-    confusionMatrix = confusion_matrix(y_test, y_pred, normalize = 'true')
-
-    # Create a ConfusionMatrixDisplay object from the confusion matrix.
-    # The display_labels parameter is set to the names of the classes.
-    disp = ConfusionMatrixDisplay(confusion_matrix = confusionMatrix, display_labels = ['T','B','Y','G'])
-
-    # Plot the confusion matrix.
-    disp.plot()
-
-    # Saves confusion matrix to the plots folder
-    plt.savefig(os.path.join(plot_path, 'confusion.png')) 
-
-    from sklearn.metrics import classification_report
-    print(classification_report(y_test, y_pred))
-
-def train_model():
-    # Extract the training and test samples from the EMNIST dataset
-    X_train, y_train = extract_training_samples('balanced')
-    X_test, y_test = extract_test_samples('balanced')
-
-    # Filter the training and test datasets
-    (X_train, y_train_library) = filterDataset(X_train, y_train)
-    (X_test, y_test) = filterDataset(X_test, y_test)
-
-    # Remodulate the labels of the training and test datasets
-    y_train_library = remodulate(y_train_library)
-    y_test = remodulate(y_test)
-
-    # Normalize the training and test datasets
-    X_train = X_train.astype("float32") / 255
-    X_test = X_test.astype("float32") / 255
-
-    # Print the shape of the training data
-    print(X_train.shape)
-
-    # Reshape the training data from 3D to 2D. The new shape is (number of samples, image width * image height)
-    X_train = X_train.reshape((-1, 28, 28, 1))
-
-    # Reshape the test data from 3D to 2D. The new shape is (number of samples, image width * image height)
-    X_test = X_test.reshape((-1, 28, 28, 1))
-
-    # Print the new shape of the training data
-    print(X_train.shape)
-
-    # Print the shape of the test data
-    print(X_test.shape)
-
-    seq_lett_model = create_model()
-
-    # Set the batch size. This is the number of samples that will be passed through the network at once.
-    batch_size = 128
-
-    # Set the number of epochs. An epoch is one complete pass through the entire training dataset.
-    epochs = 25
-
-    # Compile the model. 
-    # We use the sparse_categorical_crossentropy loss function, which is suitable for multi-class classification problems.
-    # The optimizer is set to 'adam', which is a popular choice due to its efficiency and good performance on a wide range of problems.
-    # We also specify that we want to evaluate the model's accuracy during training.
-    seq_lett_model.compile(loss="sparse_categorical_crossentropy", optimizer="adam", metrics=["accuracy"])
-
-    # Fit the model to the training data. 
-    # We also specify a validation split of 0.1, meaning that 10% of the training data will be used as validation data.
-    # The model's performance is evaluated on this validation data at the end of each epoch.
-    early_stopping = keras.callbacks.EarlyStopping(monitor='val_loss', patience=2, restore_best_weights=True)
-    training_operation = seq_lett_model.fit(
-        X_train, y_train_library, 
-        batch_size=batch_size, 
-        epochs=epochs, 
-        validation_split=0.1,
-        callbacks=[early_stopping])
-
-    # Save the trained model to a file so that it can be loaded later for making predictions or continuing training.
-    seq_lett_model.save('seq_lett_model.keras')
-    return training_operation, X_test, y_test, seq_lett_model
-
-def capture_image_from_webcam():
-    """
-    Captures an image from the webcam and returns the captured frame.
-
-    Returns:
-        numpy.ndarray: The captured frame from the webcam.
-    """
-    import platform
-    # Determina il dispositivo video in base al sistema operativo
-    if platform.system() == 'Linux':
-        video_device = 0
-    else:
-        video_device = 1
-
-    # Crea l'oggetto VideoCapture utilizzando il dispositivo video appropriato
-    cap = cv2.VideoCapture(video_device)
-
-    while True:
-        ret, frame = cap.read()
-        if ret:
-            cv2.imshow('Input', frame)
-            if cv2.waitKey(1) & 0xFF == ord('q'):
-                break
-        else:
-            break
-    cap.release()
-    cv2.destroyAllWindows()
-    return frame
-
-def save_image(image, filename):
-    cv2.imwrite(filename, image)
-
-def preprocess_image_for_detection(image):
-    """
-    Preprocesses an image for object detection by performing the following steps:
-    1. Converts the image to grayscale.
-    2. Applies Gaussian blur to reduce noise.
-    3. Applies adaptive thresholding to create a binary image.
-    4. Performs dilation and erosion to emphasize grid lines.
-    
-    Args:
-        image (numpy.ndarray): The input image to be preprocessed.
-        
-    Returns:
-        numpy.ndarray: The preprocessed image.
-    """
-    gray = cv2.cvtColor(image, cv2.COLOR_BGR2GRAY)
-    blur = cv2.GaussianBlur(gray, (7,7), 0)
-    thresh = cv2.adaptiveThreshold(blur, 255, 1, 1, 15, 2)
-    
-    # Use dilation and erosion to emphasize the grid lines
-    kernel = np.ones((3,3),np.uint8)
-    dilation = cv2.dilate(thresh,kernel,iterations = 1)
-    erosion = cv2.erode(dilation,kernel,iterations = 1)
-    
-    return erosion
-
-def find_largest_contour(contours):
-    max_area = 0
-    for i in contours:
-        area = cv2.contourArea(i)
-        if area > max_area:
-            max_area = area
-            largest_contour = i
-    return largest_contour
-
-def extract_ROIs(contours, original, coefficient):
-    """
-    Extracts regions of interest (ROIs) from the given contours based on the provided coefficient.
-
-    Parameters:
-    - contours: A list of contours.
-    - original: The original image.
-    - coefficient: A coefficient used to calculate the minimum contour area.
-
-    Returns:
-    - ROIs: A list of extracted regions of interest.
-    - n: The count of ROIs with the same y-coordinate.
-
-    """
-    MIN_CONTOUR_AREA = coefficient * original.shape[0] * original.shape[1]
-    ROIs = []
-    yt = None  # y-coordinate of the previous ROI
-    n = 1  # count of ROIs with the same y-coordinate
-    tolerance = 10  # tolerance for the y-coordinate
-
-    # Sort contours by their y-coordinate, then by their x-coordinate
-    contours = list(contours)
-    contours.sort(key=lambda c: (cv2.boundingRect(c)[1], cv2.boundingRect(c)[0]))
-
-    for i in contours:
-        area = cv2.contourArea(i)
-        if area > MIN_CONTOUR_AREA:
-            x, y, w, h = cv2.boundingRect(i)
-            if yt is not None and abs(y - yt) <= tolerance:
-                n += 1
-            else:
-                yt = y
-                n = 1
-            ROI = original[y:y+h, x:x+w]
-            ROIs.append(ROI)
-    return ROIs, n
-
-def preprocess_image(image_path):
-    """
-    Preprocesses an image for further analysis.
-
-    Args:
-        image_path (str): The path to the image file.
-
-    Returns:
-        numpy.ndarray: The preprocessed image as a numpy array.
-
-    Raises:
-        None
-
-    """
-    im = cv2.imread(image_path)
-    if im is None:
-        print(f"Error loading image: {image_path}")
-        return None
-
-    im = cv2.bitwise_not(im)
-    im = cv2.cvtColor(im, cv2.COLOR_BGR2GRAY)
-    _, im = cv2.threshold(im, 127, 255, cv2.THRESH_BINARY)
-    im = cv2.resize(im, dsize=(28, 28), interpolation=cv2.INTER_LINEAR)
-    im = im.astype("float32") / 255
-    im = np.reshape(im, (28, 28, 1))
-    im = tf.expand_dims(im, axis=0)
-    return im
-
-def prediction(ROIs, n, seq_lett_model):
-    # Preprocess the ROIs and make predictions
-    l = []
-    for i in range(1, len(ROIs)):
-        im = preprocess_image(f"./manipulated_grids/ROI_{i}.png")
-        if im is not None:
-            prediction = seq_lett_model.predict(im)
-            max = np.where(prediction == np.amax(prediction))
-            l.append(int(max[1][0]))
-
-    # Create the grid from the predictions
-    nrow = len(l) // n if n < len(l) else n // len(l)
-    nrow = int(nrow)
-
-    mat = np.array(list(reversed(l)))
-    if nrow == 1:
-        grid = mat.reshape(nrow, n-1)  
-    else:
-        grid = mat.reshape(nrow, n)
-
-    label_mapping = {0: 'T', 1: 'B', 2: 'Y', 3: 'G'}
-    show = np.vectorize(label_mapping.get)(grid)
-    print(show)
-
-    return grid
-
 def main():
     #ask user terminale input for training model
     train_flag  = input("Do you want to train the model? (y/n): ")  
     if train_flag == 'y':
-        training_operation, X_test, y_test, seq_lett_model = train_model()
-        model_statistics(training_operation, X_test, y_test, seq_lett_model)
+        training_operation, X_test, y_test, seq_lett_model = lm.train_model()
+        lm.model_statistics(training_operation, X_test, y_test, seq_lett_model)
     
     # Load the trained model from the file
-    seq_lett_model = keras.models.load_model('seq_lett_model.keras')
+    seq_lett_model = lm.keras.models.load_model('seq_lett_model.keras')
 
     while True:
         try:
             warnings.filterwarnings("ignore")
             # Delete all the files in the manipulated_grids folder
-            os.system("find './manipulated_grids/' -name 'ROI_*' -exec rm {} \;")
+            lm.os.system("find './manipulated_grids/' -name 'ROI_*' -exec rm {} \;")
             # Ask user to take a picture of the grid or if they want to use a default image from file explorer
             if input("Do you want to take a picture of the grid? If you press n you have to pick an image from your filesystem (y/n): ") == 'y':
-                frame = capture_image_from_webcam()
+                frame = lm.capture_image_from_webcam()
                 timestamp = datetime.datetime.now().strftime('%Y-%m-%d_%H-%M-%S')
                 image_path = f'./grids/grid_{timestamp}.png'
 
-                save_image(frame, image_path)
+                lm.save_image(frame, image_path)
             else:
                 path = input("Enter the name of the image: ")
                 image_path = f'./grids/{path}.png'
@@ -746,17 +72,17 @@ def main():
             if image is None:
                 raise Exception(f"Error loading image: {image_path}")
 
-            processed_image = preprocess_image_for_detection(image)
+            processed_image = lm.preprocess_image_for_detection(image)
 
             contours, _ = cv2.findContours(processed_image, cv2.RETR_TREE, cv2.CHAIN_APPROX_SIMPLE)
             #contours = sorted(contours, key=cv2.contourArea, reverse=True)
-            ROIs, n = extract_ROIs(contours, image.copy(), 0.02)
+            ROIs, n = lm.extract_ROIs(contours, image.copy(), 0.02)
 
             # Save the ROIs to the manipulated_grids folder
             for i, ROI in enumerate(ROIs):
-                save_image(ROI, f'./manipulated_grids/ROI_{i}.png')
+                lm.save_image(ROI, f'./manipulated_grids/ROI_{i}.png')
 
-            grid = prediction(ROIs, n, seq_lett_model)
+            grid = lm.prediction(ROIs, n, seq_lett_model)
 
             break
         except Exception as e:
@@ -778,7 +104,7 @@ def main():
     """
     
     # Define the initial state
-    problem=UniformColoring(initialize_state(grid),Heuristic.heuristic_color_use_most_present)
+    problem=uc.UniformColoring(uc.initialize_state(grid),uc.Heuristic.heuristic_color_use_most_present)
 
     t = 10
     signal.signal(signal.SIGALRM, lambda signum, frame: handler(signum, frame, t))
@@ -788,7 +114,7 @@ def main():
         # function call for the UCS 
         start_time = time.time()
         print("Compute uniform_cost_search...")
-        ucs = best_first_graph_search(problem, lambda node: node.path_cost)
+        ucs = uc.best_first_graph_search(problem, lambda node: node.path_cost)
         print("\n")
         print("--- %s seconds ---" % (time.time() - start_time))
         print("Final state: \n",ucs.state.grid)
@@ -808,7 +134,7 @@ def main():
     try:
         # function call for the ids 
         start_time = time.time()
-        ids = iterative_deepening_search(problem)
+        ids = uc.iterative_deepening_search(problem)
         print("Final state: \n",ids.state.grid)
         print("\n")
         print("Solution cost:",ids.path_cost)
@@ -821,14 +147,14 @@ def main():
         # Timer reset if the function returns before time 
         signal.alarm(0)
 
-    astar = astar_search(problem, display=True)
+    astar = uc.astar_search(problem, display=True)
     print("Final state: \n",astar.state.grid)
     print("\n")
     print("Solution cost:",astar.path_cost)
     print("\n")
     print(astar.solution())
 
-    greedy = greedy_search(problem, display=True)
+    greedy = uc.greedy_search(problem, display=True)
     print("Final state: \n",greedy.state.grid)
     print("\n")
     print("Solution cost:",greedy.path_cost)
@@ -838,6 +164,25 @@ def main():
     # Delete all the files in the manipulated_grids folder after computing
     #os.system("find './manipulated_grids/' -name 'ROI_*' -exec rm {} \;")
 
+def generate_frames():
+    while True:
+        success, frame = camera.read()  # Legge un frame dalla telecamera
+        if not success:
+            break
+        else:
+            ret, buffer = cv2.imencode('.png', frame)  # Codifica il frame in formato PNG
+            frame = buffer.tobytes()
+            yield (b'--frame\r\n'
+                   b'Content-Type: image/png\r\n\r\n' + frame + b'\r\n')  # Restituisce il frame come un'immagine PNG
+
+@app.route('/')
+def index():
+    return render_template('index.html')
+
+@app.route('/video_feed')
+def video_feed():
+    return Response(generate_frames(), mimetype='multipart/x-mixed-replace; boundary=frame')
 
 if __name__ == "__main__":
-    main()
+    #main()
+    app.run(debug=True)
