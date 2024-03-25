@@ -24,8 +24,12 @@
     </div>
   </div>
   <div class="container-fluid">
-    <p>Accuracy in tests: {{ accuracy }}</p>
-    <p>Loss in tests: {{ loss }}</p>
-    <p>Classification report: {{class_report}}</p>
+    <p><strong>Accuracy in tests:</strong> {{ accuracy }}</p>
+    <p><strong>Loss in tests:</strong> {{ loss }}</p>
+    <h3>Reports</h3>
+    <p><strong>Metrics class T:</strong> {{metrics_per_class[0]}}</p>
+    <p><strong>Metrics class B:</strong> {{metrics_per_class[1]}}</p>
+    <p><strong>Metrics class Y:</strong> {{metrics_per_class[2]}}</p>
+    <p><strong>Metrics class G:</strong> {{metrics_per_class[3]}}</p>
   </div>
 </div>

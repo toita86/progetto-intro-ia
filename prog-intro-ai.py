@@ -10,6 +10,7 @@ import signal
 import warnings
 from flask import Flask, Response, render_template
 
+
 '''
 Uniform Coloring è un dominio in cui si hanno a disposizione alcune celle da colorare, e vari colori
 a disposizione. 
@@ -194,7 +195,7 @@ def save_image():
 @app.route('/train_model', methods=['POST'])
 def train_model():
     training_operation, X_test, y_test, seq_lett_model = lm.train_model()
-    class_report = lm.model_statistics(training_operation, X_test, y_test, seq_lett_model)
+    metrics_per_class = lm.model_statistics(training_operation, X_test, y_test, seq_lett_model)
 
     # Evaluate the model's performance on the test data. 
     # The evaluate function returns the loss value and metrics values for the model in test mode.
@@ -204,9 +205,10 @@ def train_model():
     loss, accuracy =  seq_lett_model.evaluate(X_test, y_test, verbose=0)
 
     return render_template('train.html',
-                           class_report=class_report,
+                           metrics_per_class=metrics_per_class,
                            loss=loss,
                            accuracy=accuracy)
+
 
 # an @app route to choose the image from the grids folder and process it
 @app.route('/process_image' , methods=['POST'])
