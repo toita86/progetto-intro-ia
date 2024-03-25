@@ -191,6 +191,23 @@ def save_image():
     lm.save_frame = True
     return 'OK', 200
 
+@app.route('/train_model', methods=['POST'])
+def train_model():
+    training_operation, X_test, y_test, seq_lett_model = lm.train_model()
+    class_report = lm.model_statistics(training_operation, X_test, y_test, seq_lett_model)
+
+    # Evaluate the model's performance on the test data. 
+    # The evaluate function returns the loss value and metrics values for the model in test mode.
+    # We set verbose=0 to avoid logging the detailed output during the evaluation.
+    # The loss value represents how well the model can estimate the target variables. Lower values are better.
+    # The accuracy value represents the percentage of correct predictions made by the model.
+    loss, accuracy =  seq_lett_model.evaluate(X_test, y_test, verbose=0)
+
+    return render_template('train.html',
+                           class_report=class_report,
+                           loss=loss,
+                           accuracy=accuracy)
+
 # an @app route to choose the image from the grids folder and process it
 @app.route('/process_image' , methods=['POST'])
 def process_image():
@@ -219,14 +236,25 @@ def process_image():
     # Define the initial state
     problem=uc.UniformColoring(uc.initialize_state(grid),uc.Heuristic.heuristic_color_use_most_present)
 
-    print("Compute uniform_cost_search...")
+    # Measure the execution time of UCS
+    start_time = time.time()
     ucs = uc.best_first_graph_search(problem, lambda node: node.path_cost)
-        
+    ucs_time = time.time() - start_time
+
+    # Measure the execution time of IDS
+    start_time = time.time()
     ids = uc.iterative_deepening_search(problem)
+    ids_time = time.time() - start_time
 
+    # Measure the execution time of A*
+    start_time = time.time()
     astar = uc.astar_search(problem, display=True)
+    astar_time = time.time() - start_time
 
+    # Measure the execution time of Greedy search
+    start_time = time.time()
     greedy = uc.greedy_search(problem, display=True)
+    greedy_time = time.time() - start_time
 
     grid_show=grid_translation(grid)
     grid_show = grid_show.tolist()
@@ -238,8 +266,12 @@ def process_image():
                            ucs=ucs, 
                            ids=ids, 
                            astar=astar, 
-                           greedy=greedy)
+                           greedy=greedy,
+                           ucs_time=ucs_time,
+                           ids_time=ids_time,
+                           astar_time=astar_time,
+                           greedy_time=greedy_time)
 
 if __name__ == "__main__":
     #main()
-    app.run(debug=True)
+    app.run(host='0.0.0.0', port=5050,debug=True)
