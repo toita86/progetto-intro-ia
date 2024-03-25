@@ -1,5 +1,7 @@
 import tensorflow as tf
 import numpy as np
+import matplotlib
+matplotlib.use('Agg')
 import matplotlib.pyplot as plt
 import cv2
 import os
@@ -114,6 +116,7 @@ def create_model():
     return seq_lett_model
 
 def model_statistics(training_operation, X_test, y_test, seq_lett_model):
+    
     plot_path = f'./static/plots/'
 
     # Plot training & validation accuracy values
@@ -134,7 +137,7 @@ def model_statistics(training_operation, X_test, y_test, seq_lett_model):
     plt.ylabel('Loss')
     plt.xlabel('Epoch')
     plt.legend(['Train', 'Val'], loc='upper left')
-    plt.savefig(os.path.join(plot_path, 'loss_plot.png'), dpi=300)  # Imposta la risoluzione a 300 DPI
+    plt.savefig(os.path.join(plot_path, 'loss_plot.png'))  # Imposta la risoluzione a 300 DPI
     plt.close()
 
     # Use the trained model to make predictions on the test data.
@@ -162,7 +165,7 @@ def model_statistics(training_operation, X_test, y_test, seq_lett_model):
     plt.savefig(os.path.join(plot_path, 'confusion_matrix.png')) 
 
     from sklearn.metrics import classification_report
-    class_report = classification_report(y_test, y_pred)    
+    class_report = classification_report(y_test, y_pred)
     return class_report
 
 def train_model():
