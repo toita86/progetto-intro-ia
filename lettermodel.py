@@ -10,6 +10,9 @@ from emnist import list_datasets
 from tensorflow import keras
 from sklearn.metrics import confusion_matrix
 from sklearn.metrics import ConfusionMatrixDisplay
+from sklearn.metrics import recall_score, precision_score, f1_score, accuracy_score
+
+
 
 # Import the necessary functions from the emnist library
 from emnist import extract_training_samples
@@ -165,8 +168,23 @@ def model_statistics(training_operation, X_test, y_test, seq_lett_model):
     plt.savefig(os.path.join(plot_path, 'confusion_matrix.png')) 
 
     from sklearn.metrics import classification_report
-    class_report = classification_report(y_test, y_pred)
-    return class_report
+    #class_report = classification_report(y_test, y_pred)
+    #print(class_report)
+    metrics_per_class = {}
+
+    for classe in set(y_test):
+        precision = round(precision_score(y_test, y_pred, labels=[classe], average='micro'), 2)
+        recall = round(recall_score(y_test, y_pred, labels=[classe], average='micro'), 2)
+        f1 = round(f1_score(y_test, y_pred, labels=[classe], average='micro'), 2)
+        accuracy = round(accuracy_score(y_test, y_pred), 2)
+
+        metrics_per_class[classe] = {
+            'precision': precision,
+            'recall': recall,
+            'f1-score': f1,
+            'accuracy': accuracy
+        }
+    return metrics_per_class
 
 def train_model():
     # Extract the training and test samples from the EMNIST dataset
