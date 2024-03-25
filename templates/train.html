@@ -1,0 +1,108 @@
+<!--
+<div class="container-fluid justify-content-center text-justify pd-3 m-3">
+  <div>
+    <img
+      src="{{ url_for('static', filename='plots/accuracy_plot.png') }}"
+      alt="accuracy_plot"
+      class="plots"
+    />
+  </div>
+  <div>
+    <img
+      src="{{ url_for('static', filename='plots/loss_plot.png') }}"
+      alt="loss_plot"
+      class="plots"
+    />
+  </div>
+  <div>
+    <img
+      src="{{ url_for('static', filename='plots/confusion_matrix.png') }}"
+      alt="confusion_matrix"
+      class="plots"
+    />
+  </div>
+  <div>
+    <p>Accuracy in tests: {{ accuracy }}</p>
+    <p>Loss in tests: {{ loss }}</p>
+    <p>Classification report: {{class_report}}</p>
+  </div>
+</div> 
+
+<br /><br />
+-->
+<div class="container m-3">
+  <div class="carousel-container">
+    <div id="demo" class="carousel slide" data-bs-ride="carousel">
+      <!-- Indicators/dots -->
+      <div class="carousel-indicators">
+        <button
+          type="button"
+          data-bs-target="#demo"
+          data-bs-slide-to="0"
+          class="active"
+        ></button>
+        <button
+          type="button"
+          data-bs-target="#demo"
+          data-bs-slide-to="1"
+        ></button>
+        <button
+          type="button"
+          data-bs-target="#demo"
+          data-bs-slide-to="2"
+        ></button>
+      </div>
+
+      <!-- The slideshow/carousel -->
+      <div class="carousel-inner">
+        <div class="carousel-item active">
+          <img
+            src="{{ url_for('static', filename='plots/accuracy_plot.png') }}"
+            alt="accuracy_plot"
+            class="d-block carousel-image"
+          />
+        </div>
+        <div class="carousel-item">
+          <img
+            src="{{ url_for('static', filename='plots/loss_plot.png') }}"
+            alt="loss_plot"
+            class="d-block carousel-image"
+          />
+        </div>
+        <div class="carousel-item">
+          <img
+            src="{{ url_for('static', filename='plots/confusion_matrix.png') }}"
+            alt="confusion_matrix"
+            class="d-block carousel-image"
+          />
+        </div>
+      </div>
+
+      <!-- Left and right controls/icons -->
+      <button
+        class="carousel-control-prev"
+        type="button"
+        data-bs-target="#demo"
+        data-bs-slide="prev"
+      >
+        <span class="carousel-control-prev-icon"></span>
+      </button>
+      <button
+        class="carousel-control-next"
+        type="button"
+        data-bs-target="#demo"
+        data-bs-slide="next"
+      >
+        <span class="carousel-control-next-icon"></span>
+      </button>
+    </div>
+  </div>
+
+  <div class="container text-justify">
+    <div>
+      <p>Accuracy in tests: {{ accuracy }}</p>
+      <p>Loss in tests: {{ loss }}</p>
+      <p>Classification report: {{ class_report }}</p>
+    </div>
+  </div>
+</div>

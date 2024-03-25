@@ -114,7 +114,7 @@ def create_model():
     return seq_lett_model
 
 def model_statistics(training_operation, X_test, y_test, seq_lett_model):
-    plot_path = f'./plots/'
+    plot_path = f'./static/plots/'
 
     # Plot training & validation accuracy values
     plt.plot(training_operation.history['accuracy'])
@@ -136,19 +136,6 @@ def model_statistics(training_operation, X_test, y_test, seq_lett_model):
     plt.legend(['Train', 'Val'], loc='upper left')
     plt.savefig(os.path.join(plot_path, 'loss_plot.png'), dpi=300)  # Imposta la risoluzione a 300 DPI
     plt.close()
-
-    # Evaluate the model's performance on the test data. 
-    # The evaluate function returns the loss value and metrics values for the model in test mode.
-    # We set verbose=0 to avoid logging the detailed output during the evaluation.
-    loss, accuracy =  seq_lett_model.evaluate(X_test, y_test, verbose=0)
-
-    # Print the loss value that the model achieved on the test data.
-    # The loss value represents how well the model can estimate the target variables. Lower values are better.
-    print("Test loss:", loss)
-
-    # Print the accuracy that the model achieved on the test data.
-    # The accuracy is the proportion of correct predictions that the model made. Higher values are better.
-    print("Test accuracy:", accuracy)
 
     # Use the trained model to make predictions on the test data.
     # The predict function returns the output of the last layer in the model, which in this case is the output of the softmax layer.
@@ -172,10 +159,11 @@ def model_statistics(training_operation, X_test, y_test, seq_lett_model):
     disp.plot()
 
     # Saves confusion matrix to the plots folder
-    plt.savefig(os.path.join(plot_path, 'confusion.png')) 
+    plt.savefig(os.path.join(plot_path, 'confusion_matrix.png')) 
 
     from sklearn.metrics import classification_report
-    print(classification_report(y_test, y_pred))
+    class_report = classification_report(y_test, y_pred)    
+    return class_report
 
 def train_model():
     # Extract the training and test samples from the EMNIST dataset
@@ -195,7 +183,7 @@ def train_model():
     X_test = X_test.astype("float32") / 255
 
     # Print the shape of the training data
-    print(X_train.shape)
+    #print(X_train.shape)
 
     # Reshape the training data from 3D to 2D. The new shape is (number of samples, image width * image height)
     X_train = X_train.reshape((-1, 28, 28, 1))
@@ -204,10 +192,10 @@ def train_model():
     X_test = X_test.reshape((-1, 28, 28, 1))
 
     # Print the new shape of the training data
-    print(X_train.shape)
+    #print(X_train.shape)
 
     # Print the shape of the test data
-    print(X_test.shape)
+    #print(X_test.shape)
 
     seq_lett_model = create_model()
 
