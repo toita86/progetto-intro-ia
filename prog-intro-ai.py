@@ -217,8 +217,9 @@ def process_image():
 
     ucs = ids = astar = greedy = None
 
-    #image_path = get_last_image_path('./grids')
-    image_path = './grids/3x3.png'
+    #image_path = get_last_image_path('./grids/')
+    image_path = './grids/5x3.png' # for testing purposes
+    print(f"Processing image: {image_path}")
     image = cv2.imread(image_path)
     if image is None:
         return 'Error loading image', 404

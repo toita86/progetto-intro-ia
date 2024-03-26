@@ -108,10 +108,11 @@ def create_model():
         keras.layers.Conv2D(28, (3, 3), activation='relu'),
         keras.layers.MaxPooling2D((2, 2)),
         keras.layers.Conv2D(128, (3, 3), activation='relu'),
+        keras.layers.Dropout(0.5),
         keras.layers.MaxPooling2D((2, 2)),
         keras.layers.Conv2D(128, (3, 3), activation='relu'),
         keras.layers.Flatten(),
-        keras.layers.Dense(128, activation='relu'),
+        keras.layers.Dense(512, activation='relu'),
         keras.layers.Dropout(0.5),
         keras.layers.Dense(4, activation='softmax')  # Output layer for 4 letters
     ])
@@ -221,7 +222,7 @@ def train_model():
     seq_lett_model = create_model()
 
     # Set the batch size. This is the number of samples that will be passed through the network at once.
-    batch_size = 128
+    batch_size = 32
 
     # Set the number of epochs. An epoch is one complete pass through the entire training dataset.
     epochs = 25
@@ -392,5 +393,8 @@ def prediction(ROIs, n, seq_lett_model):
         grid = mat.reshape(nrow, n-1)  
     else:
         grid = mat.reshape(nrow, n)
+
+    # print the grid
+    print(grid)
 
     return grid
