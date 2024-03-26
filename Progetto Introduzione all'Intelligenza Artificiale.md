@@ -64,11 +64,10 @@ import time
 ```
 
 Il file python del progetto è suddiviso in 3 files:
-- prog-intro-ai.py: 
-## 1. Descrizione formale del dominio e vincoli su cui l'agente può operare
-Descrizione formale del dominio e dei vincoli che le azioni eseguibili dall’agente (la testina) nella griglia devono rispettare (esempio vincoli: v1=”l’agente può compiere un solo passo alla volta”, v2=”l’agente si può muovere solo fra celle adiacenti”, etc.). La descrizione sarà un testo che descrive le regole da rispettare e le assunzioni desunte dall’analisi del dominio.
-
-### Descrizione del dominio e vincoli
+- _prog-intro-ai.py_: utilizza OpenCV per integrare la manipolazione delle immagini, l'addestramento del modello e gli algoritmi di ricerca, offrendo un'interfaccia Web per l'interazione mediante l'utilizzo di Flask.
+- _lettermodel.py_:  utilizza TensorFlow per addestrare un modello di rete neurale convoluzionale (CNN) sull'insieme di dati EMNIST bilanciato, quindi utilizza il modello per classificare regioni di interesse (ROI) estratte dalle immagini tramite manipolazioni di immagini e contorni. Inoltre implementa Keras per la costruzione, l'addestramento e la valutazione del modello di deep learning
+- _uniformcolring.py_:  definisce una classe di problemi di colorazione uniforme e implementa diversi algoritmi di ricerca non informata e informata (come A* e ricerca greedy) per risolvere il problema. Si utilizza per determinare la sequenza di azioni che porta al raggiungimento dell'obiettivo, dove ogni cella di una griglia deve essere colorata in modo che tutte le celle adiacenti abbiano colori diversi.
+## Descrizione del dominio e vincoli
 
 **Elementi del dominio:**
 - _Celle_: Presenti in una griglia rettangolare nella quale è possibile spostare una testina colorante. Ogni cella ha un colore di partenza ed è possibile ricolorarle con i tre colori disponibili (yellow, blue, green).
@@ -97,21 +96,202 @@ Descrizione formale del dominio e dei vincoli che le azioni eseguibili dall’ag
 **Esempi di problemi, con possibili soluzioni e costi**:
 ![[esempio.png|500]]
 
-## 2 Implementazione delle classi per la ricerca nello spazio degli stati di Smart Vacuum.
-Utilizzando le classi di AIMA-python si implementi quindi un dominio UniformColoring come classe derivata da Problem, scegliendo e definendo una rappresentazione per gli stati e ridefinendo opportuni metodi actions e result e tutti gli eventuali metodi aggiuntivi , es. goal_test, che si rendessero necessari.
+## Classi utilizzate per la ricerca nello spazio, la classe problem e le sue componenti
+  
+Il codice Python presenta una serie di classi e funzioni per risolvere problemi di colorazione uniforme su una griglia. Le principali componenti includono:
 
-Si descriva e si implementi almeno una euristica definendone le caratteristiche di consistenza e ammissibilità rispetto al dominio dato. L’euristica definita mantiene le stesse proprietà nel caso in cui le azioni di spostamento costassero 0 o le colorazioni avessero tutte lo stesso costo?
+1. Definizione di costanti come `MOV_COST`, che rappresenta il costo di un movimento.
+2. Definizione di enumerazioni come `Colors` e `Directions`, che rappresentano rispettivamente i colori disponibili e le direzioni in cui ci si può spostare sulla griglia.
+3. Definizione di una classe `State`, che rappresenta lo stato del problema con la posizione corrente sulla griglia e l'identificatore unico.
+4. Definizione di una classe `UniformColoring` che eredita da una classe astratta `Problem` e implementa i metodi per rappresentare il problema, come le azioni possibili in uno stato, il risultato di un'azione, il test dell'obiettivo e il calcolo del costo del percorso.
+5. Implementazione di algoritmi di ricerca come A* e ricerca greedy per risolvere il problema di colorazione uniforme sulla griglia.
+6. Altre funzioni ausiliarie come `initialize_state` per inizializzare lo stato iniziale del problema.
+
+Di seguito si spiegano nel dettagli le parti fondamentali 
+### Classe `UniformColoring`:
+
+**Metodo `__init__`**: Inizializza il problema con lo stato iniziale e il tipo di euristica da utilizzare.
+
+**Metodo `actions`**: Restituisce le azioni possibili in uno stato, che possono essere il cambio di colore di una casella o il movimento in una direzione.
+
+**Metodo `result`**: Restituisce lo stato successivo dato uno stato e un'azione.
+
+**Metodo `goal_test`**: Verifica se uno stato è uno stato di obiettivo, cioè se tutte le caselle hanno lo stesso colore.
+
+**Metodo `path_cost`**: Calcola il costo del percorso per raggiungere uno stato successivo dato uno stato e un'azione.
+
+**Metodo `color_initial_choice`**: Calcola il colore iniziale che verrà utilizzato per la colorazione.
+
+**Metodo `heuristic`**: Calcola il valore euristico di uno stato dato il tipo di euristica selezionato.
+
+**Metodo `h`**: Calcola il valore euristico di uno stato.
+
+### Classi degli algoritmi di ricerca:
+
+**`best_first_graph_search`**: Implementa l'algoritmo di ricerca best-first graph search, che esplora i nodi con i punteggi f più bassi prima.
+
+**`iterative_deepening_search`**: Implementa l'algoritmo di ricerca iterative deepening search, che esegue una ricerca a profondità limitata aumentando progressivamente la profondità massima. Sfrutta l'algoritmo **`depth_limit_search`** con un limite incrementato fino a quando non si troa la soluzione. La funzione **`is_cycle`** verifica se esiste un ciclo nel percorso fino a un nodo.
+
+**`astar_search`**: Implementa l'algoritmo di ricerca A*, che combina il costo effettivo del percorso finora con un'euristica per stimare il costo rimanente.
+
+**`greedy_search`**: Implementa l'algoritmo di ricerca greedy, che seleziona il successore più promettente secondo l'euristica.
+
+### Euristica utilizzata:
+
+L'euristica utilizzata è la seguente:
+**euristica_color_use_most_present**: Calcola il valore euristico sommando la distanza di Manhattan tra ogni casella non colorata e la posizione attuale, con una penalità aggiuntiva se il colore della casella non è il colore più presente nella griglia.
+
+Questa euristica cerca di minimizzare la distanza tra le caselle non colorate e la posizione attuale, preferendo anche i colori più presenti nella griglia per ridurre il numero di caselle non colorate.
+
+## Sistema di Rilevamento e Classificazione di Caratteri Alfanumerici Utilizzando Reti Neurali Convoluzionali e OpenCV
+
+### Addestramento del Modello:
+
+**Modello CNN**: Viene definito un modello di rete neurale _convoluzionale_ (CNN) per la classificazione delle immagini. Un modello convoluzionale è una rete neurale _progettata per l'elaborazione delle immagini, utilizzando strati convoluzionali per rilevare pattern e caratteristiche_. Il modello è composto da diversi strati, tra cui strati di convoluzione, strati di max pooling, strati di dropout e strati densamente connessi. Gli strati di convoluzione applicano filtri per estrarre caratteristiche dalle immagini. I max pooling riducono la dimensionalità preservando le caratteristiche principali. Gli strati di dropout combattono l'overfitting disattivando casualmente alcuni neuroni. Gli strati densamente connessi combinano le caratteristiche estratte per la classificazione finale.
 
 ```python
-
+seq_lett_model = keras.Sequential([
+	keras.Input(shape=(28, 28, 1)), # Input shape: 28x28 pixels, 1 color channel
+	keras.layers.Conv2D(28, (3, 3), activation='relu'),
+	keras.layers.MaxPooling2D((2, 2)),
+	keras.layers.Conv2D(128, (3, 3), activation='relu'),
+	keras.layers.MaxPooling2D((2, 2)),
+	keras.layers.Conv2D(128, (3, 3), activation='relu'),
+	keras.layers.Flatten(),
+	keras.layers.Dense(128, activation='relu'),
+	keras.layers.Dropout(0.5),
+	keras.layers.Dense(4, activation='softmax') # Output layer for 4 letters
+])
 ```
 
-## 3 Acquisizione e classificazione degli input, stato iniziale e goal.
 
-Si realizzi un programma che, passata in input un’immagine contenente la configurazione della griglia e la posizione iniziale dell’agente:
+**Preparazione del dataset**: Prima dell'addestramento è necessario filtrare il dataset ed estrarre solo gli esempi utili al nostro progetto. Questo viene fatto definendo tutte le etichette definite dal dataset EMNIST (`LABELS`), applicare la funzione `filterDataset(X_data, y_data)` che filtra il dataset in base a etichette specifiche ('T', 'B', 'G', 'Y') restituendo un nuovo insieme di dati e relative etichette e infine la funzione `remodulate(y)`, che sostituisce le etichette 'T', 'B', 'Y', 'G' con i valori numerici 0, 1, 2, 3 rispettivamente. 
 
--  interpreti l’immagine individuando la configurazione della griglia e, attraverso un metodo di classificazione, la posizione iniziale dell’agente e la colorazione iniziale delle celle. Non ci sono vincoli sul metodo/modello utilizzato per la classificazione. Si consiglia di utilizzare il dataset eMNIST/MNIST per la classificazione di lettere e cifre scritte a mano, visto a lezione e facilmente reperibile su Web. Assumiamo che le lettere siano solo maiuscole;
+**Addestramento del Modello**: Dopo aver preparato il dataset, è importante normalizzare sia il set di addestramento che quello di test per standardizzare i valori dei pixel delle immagini nell'intervallo (0,1), assicurando che il modello CNN impari senza distorsioni dovute a scale pixel diverse. Successivamente, mediante reshape, le immagini vengono ridimensionate per adattarle al formato richiesto dal modello. Si definisce quindi il batch size, che rappresenta il numero di campioni passati attraverso la rete contemporaneamente durante l'addestramento. Le epoche, invece, indicano quante volte l'intero dataset viene presentato al modello per l'addestramento.
+Il modello CNN viene compilato utilizzando la funzione di perdita `sparse_categorical_crossentropy` (calcola la perdita tra le etichette vere e le previsioni del modello) e l'ottimizzatore `adam`, quindi addestrato utilizzando i dati di addestramento, riservandone una frazione come dati di convalida.
+### Valutazione delle Prestazioni del Modello:
 
-- b) traduca i dati risultanti dall’analisi delle immagini negli stati stato_iniziale e stato_goal del problema, secondo la rappresentazione definita per il punto 2;
+**Confusion Matrix, grafici e Metriche di Valutazione**: Viene calcolata una matrice di confusione per valutare le prestazioni del modello sulla classificazione dei caratteri alfanumerici. Vengono inoltre calcolate e visualizzate metriche per valutare le prestazioni del modello su ciascuna classe di caratteri alfanumerici. Di seguito se ne riportano i vari utilizzati:
+- *Precisione (Precision)*: Misura la proporzione di istanze positive correttamente predette tra tutte le istanze predette come positive.
+  Formula: Precisione = TP / (TP + FP), dove TP sono i veri positivi e FP sono i falsi positivi.
+- *Recall (Recall)*: Misura la proporzione di istanze positive correttamente predette tra tutte le istanze positive effettive.
+  Formula: Richiamo = TP / (TP + FN), dove TP sono i veri positivi e FN sono i falsi negativi.
+- *F1-Score*: È la media armonica di precisione e richiamo e fornisce un'unica misura del modello.
+  Formula: F1-Score = 2 * (Precisione * Richiamo) / (Precisione + Richiamo)
+- *Accuratezza (Accuracy)*: Misura la frazione di predizioni corrette rispetto al totale delle predizioni.
+  Formula: Accuratezza = (TP + TN) / (TP + TN + FP + FN), dove TP sono i veri positivi, TN sono i veri negativi, FP sono i falsi positivi e FN sono i falsi negativi.
+- *Perdita (Loss)*: La perdita è una misura dell'errore tra le predizioni del modello e le etichette vere. L'obiettivo durante l'addestramento è minimizzare questa perdita.
 
-- c) invochi il solutore (vedi punto 2), tramite una tecnica di ricerca informata e almeno una non informata, della classe UniformColoring e produca, se esiste, la soluzione del problema, ovvero la sequenza azioni da eseguire per raggiungere lo stato goal. E’ interessante mostrare come algoritmi diversi possano portare a soluzioni diverse nel caso in cui ottimizzino rispetto al costo della soluzione oppure rispetto la sua lunghezza.
+![[Screenshot 2024-03-26 at 11.24.14.png]]
+
+Viene anche utilizzato il callback `EarlyStopping` per interrompere l'addestramento se la perdita sui dati di convalida smette di diminuire.
+
+**Valutazione del Modello**: Dopo l'addestramento, il modello viene valutato utilizzando i dati di test. Viene calcolata l'accuratezza del modello e vengono generate visualizzazioni della perdita e dell'accuratezza durante l'addestramento, oltre che la matrice di confusione
+
+Esempio di grafici mostrati per la valutazione
+![[Screenshot 2024-03-26 at 11.20.24.png]]
+Tutti i vari grafici vengono memorizzati nella cartella plots del progetto
+### Acquisizione e Processing delle Immagini:
+
+**Acquisizione dell'Immagine dalla Webcam**: Viene definita una funzione per acquisire un frame dall'input della webcam. Il frame viene quindi restituito in formato PNG.
+
+**Preprocessing dell'Immagine per il Rilevamento delle Griglie**: L'immagine catturata dalla webcam viene preelaborata per il rilevamento delle griglie. Questo include la conversione in scala di grigi, l'applicazione di una sfocatura gaussiana per ridurre il rumore e l'applicazione di una soglia adattiva per creare un'immagine binaria.
+La griglia viene memorizzata nella cartella grids del progetto
+
+**Estrazione dei ROIs (Region Of Interests)**: Vengono estratte le regioni di interesse (ROIs) dall'immagine preelaborata utilizzando i contorni delle aree significative. Le ROIs corrispondono alle singole celle della griglia contenenti caratteri alfanumerici.
+L'immagine rielaborata e i singoli ROIs (celle della griglia) vengono memorizzate nella cartella manipulated_grids del progetto fino a riesecuzione della predizione
+
+**Preprocessing delle ROIs per la Predizione**: Le ROIs vengono preelaborate ulteriormente, ridimensionate e normalizzate, per poi essere utilizzate per la predizione dei caratteri alfanumerici.
+
+**Predizione dei Caratteri alfanumerici**: Le ROIs preelaborate vengono utilizzate come input per il modello CNN addestrato precedentemente. Il modello restituisce le predizioni dei caratteri alfanumerici per ciascuna ROI e genera una matrice delle stesse dimensioni della griglia. La funzione è la seguente
+
+```python
+def prediction(ROIs, n, seq_lett_model):
+	# Preprocess the ROIs and make predictions
+	l = []
+	for i in range(1, len(ROIs)):
+		im = preprocess_image(f"./manipulated_grids/ROI_{i}.png")
+		if im is not None:
+			prediction = seq_lett_model.predict(im)
+			max = np.where(prediction == np.amax(prediction))
+			l.append(int(max[1][0]))
+	
+	# Create the grid from the predictions
+	nrow = len(l) // n if n < len(l) else n // len(l)
+	nrow = int(nrow)
+	
+	mat = np.array(list(reversed(l)))
+	if nrow == 1:
+		grid = mat.reshape(nrow, n-1)
+	else:
+		grid = mat.reshape(nrow, n)
+	
+	return grid
+```
+
+## Ricerca
+
+Dopo la predizione delle lettere della griglia, si passa alla fase effettiva di ricerca. Il programma prevede l'esecuzione di tutti gli algoritmi citati precedentemente, mostrando per ogni algoritmo lo stato finale, definito da una griglia che mostra come la testina ha colorato la griglia, il costo per raggiungere il goal, il tempo di esecuzione e la sequenza di azioni effettuate. Questo permette di effettuare una valutazione sull'efficacia degli algoritmi.
+All'inizio è riportata la griglia predetta dal modello mediante la funzione prediction
+
+Qui sotto si riporta nello specifico il processo di ricerca informata e non informata 
+
+**Traduzione dei Dati**: Le immagini analizzate vengono tradotte in stati iniziali (`stato_iniziale`) e stati obiettivo (`stato_goal`) secondo la rappresentazione definita per il problema di colorazione uniforme. Questa rappresentazione coinvolge la creazione di un oggetto `State` che tiene traccia della griglia di colori e della posizione corrente del cursore nella griglia.
+
+**Invocazione del Solutore**: Viene invocato il solutore del problema, rappresentato dalla classe `UniformColoring`, utilizzando una tecnica di ricerca informata e almeno una non informata. Le tecniche di ricerca informata includono A* e Greedy Search, mentre la ricerca non informata è rappresentata dall'Iterative Deepening Search, UCS. Questi algoritmi cercano di trovare una sequenza di azioni ottimali per raggiungere lo stato obiettivo a partire dallo stato iniziale.
+
+**Produzione della Soluzione**: Se esiste una soluzione, cioè una sequenza di azioni che porta dallo stato iniziale allo stato obiettivo, viene restituita dal solutore. La sequenza di azioni rappresenta le mosse da effettuare sulla griglia per raggiungere lo stato obiettivo.
+
+Esempio di risultato mostrato
+![[Screenshot 2024-03-26 at 11.50.07.png]]
+## Introduzione all'Applicazione Web
+
+L'applicazione web sviluppata utilizza Flask come framework per implementare le funzionalità di backend e fornisce un'interfaccia utente intuitiva per risolvere il problema della colorazione uniforme.
+
+**Spiegazione del Programma**
+Il paragrafo iniziale dell'applicazione fornisce una descrizione dettagliata del funzionamento del programma e del problema della colorazione uniforme. Viene chiarito l'obiettivo del programma e come esso sia in grado di risolvere il problema attraverso l'utilizzo di algoritmi di ricerca.
+
+![[Screenshot 2024-03-26 at 13.48.50.png]]
+
+**Acquisizione e Salvataggio dell'Immagine**
+Nella sezione dedicata all'acquisizione dell'immagine, l'utente può utilizzare la webcam del proprio computer per scattare una foto alla griglia che desidera processare. Una volta catturata l'immagine, è possibile salvarla premendo il pulsante "Save image". L'immagine salvata viene memorizzata su `grids`, una struttura dati utilizzata per conservare lo stato iniziale del problema.
+
+**Elaborazione dell'Immagine**
+Dopo aver salvato l'immagine, l'utente può procedere con la sua elaborazione premendo il pulsante "Process image". Durante questo processo, l'applicazione utilizza gli algoritmi implementati per risolvere il problema di colorazione uniforme. I risultati ottenuti vengono visualizzati successivamente.
+
+**Addestramento del Modello**
+Il pulsante "Train model" avvia la fase di addestramento del modello utilizzato per risolvere il problema. Durante il training, vengono mostrati grafici e metriche per valutare le prestazioni del modello.
+
+![[Screenshot 2024-03-26 at 13.38.13.png]]
+
+**Feedback durante l'Esecuzione**
+Durante l'elaborazione dell'immagine e l'addestramento del modello, l'applicazione fornisce un feedback visivo sotto forma di una barra di avanzamento. Questo permette all'utente di comprendere che il programma è in esecuzione e di monitorare il progresso delle operazioni.
+
+Alcuni degli output mostrati sugli algoritmi di ricerca
+![[Screenshot 2024-03-26 at 14.04.21.png]]
+
+Output mostrato dalla fase di training
+![[Screenshot 2024-03-26 at 14.03.45.png]]
+
+## Statistiche e Valutazione dei Risultati (da sistemare sulla base degli aggiornamenti sul modello)
+
+**Accuratezza media e perdita in test**
+Nella valutazione dei risultati relativi alla classificazione delle lettere e cifre e all'estrazione degli stati dalle immagini, è stato osservato un'elevata accuratezza nel rilevamento e nell'identificazione delle entità presenti nelle griglie. La classificazione delle lettere e cifre è stata eseguita con un'accuratezza media del 98%, consentendo un'efficace estrazione degli stati necessari per risolvere il problema della colorazione uniforme.
+La funzione di perdita si riduce in un 5%.
+
+**Report sulle metriche di precision, recall, f-measure e accuracy**
+Per la classe T, la qualità della classificazione può essere considerata buona, poiché la precisione, il recall e l'F1-score sono tutti intorno al 98-99%. Questi valori indicano che il 98-99% delle lettere o cifre classificate come classe T è corretto, mentre il 98-99% delle lettere o cifre appartenenti effettivamente alla classe T è stato identificato correttamente.
+
+Anche per la classe B, la qualità della classificazione può essere considerata buona. Precisione, recall e F1-score sono tutti intorno al 98%, il che significa che circa il 98% delle lettere o cifre classificate come classe B è corretto e il 98% delle lettere o cifre appartenenti effettivamente alla classe B è stato identificato correttamente.
+
+Per la classe Y, la qualità della classificazione può ancora essere considerata buona, sebbene leggermente inferiore rispetto alle classi T e B. La precisione è del 99%, il che indica che il 99% delle lettere o cifre classificate come classe Y è corretto. Tuttavia, il recall è del 97%, il che suggerisce che il 97% delle lettere o cifre appartenenti effettivamente alla classe Y è stato identificato correttamente.
+
+Anche per la classe G, la qualità della classificazione può essere considerata buona. Precisione, recall e F1-score sono tutti intorno al 98%, indicando che circa il 98% delle lettere o cifre classificate come classe G è corretto e il 98% delle lettere o cifre appartenenti effettivamente alla classe G è stato identificato correttamente.
+
+
+**Fase di ricerca**
+Per quanto riguarda le prestazioni della ricerca nello spazio degli stati, gli algoritmi implementati hanno dimostrato una buona capacità di risolvere i problemi proposti. In particolare, sono stati risolti con successo la maggior parte dei problemi di colorazione uniforme di dimensioni medie e piccole. Tuttavia, per problemi di dimensioni molto grandi, si è riscontrata una maggiore complessità computazionale e alcuni casi in cui la ricerca non è stata in grado di trovare una soluzione ottimale entro i limiti di tempo prestabiliti (per risolvere il problema è stato imposto un limite di tempo sull'esecuzione delle funzioni), ad esempio nel caso di UCS.
+
+In generale, l'analisi delle prestazioni degli algoritmi di ricerca ha evidenziato una correlazione tra la dimensione del problema e la complessità computazionale richiesta per la sua risoluzione. Problematiche di dimensioni ridotte sono state risolte in tempi brevi con una buona precisione, mentre problemi di dimensioni maggiori hanno richiesto più tempo e risorse computazionali. Tuttavia, nonostante le sfide incontrate nei problemi di dimensioni più grandi, gli algoritmi hanno dimostrato una buona capacità di approssimazione delle soluzioni anche in questi contesti, consentendo una gestione efficace dei problemi di colorazione uniforme.
+
+**Problemi**
