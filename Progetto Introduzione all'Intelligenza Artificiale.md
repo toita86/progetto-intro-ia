@@ -5,7 +5,7 @@
 ##### Docente
 ###### Poggioni Valentina
 
-Inserire data presentazione
+Anno accademico 2023/2024
 Inserire indice
 
 ## Prefazione
@@ -25,9 +25,46 @@ La posizione iniziale della testina, la struttura della griglia e la colorazione
 
 ### Inizializzazione delle librerie e moduli
 ```python
+#prog-intro.py
+import uniformcoloring as uc
+import lettermodel as lm
+import os
+import sys
+import time
+import datetime
+import cv2
+import numpy as np
+import signal
+import warnings
+from flask import Flask, Response, render_template
 
+#lettermodel.py
+import tensorflow as tf
+import numpy as np
+import matplotlib
+matplotlib.use('Agg')
+import matplotlib.pyplot as plt
+import cv2
+import os
+import datetime
+from emnist import list_datasets
+from tensorflow import keras
+from sklearn.metrics import confusion_matrix
+from sklearn.metrics import ConfusionMatrixDisplay
+from sklearn.metrics import recall_score, precision_score, f1_score, accuracy_score
+from emnist import extract_training_samples
+from emnist import extract_test_samplesmanca classfic
+#manca classification report se va implementato
+
+#uniformcoloring.py
+from utils import *
+from search import *
+from enum import Enum
+import time
 ```
 
+Il file python del progetto è suddiviso in 3 files:
+- prog-intro-ai.py: 
 ## 1. Descrizione formale del dominio e vincoli su cui l'agente può operare
 Descrizione formale del dominio e dei vincoli che le azioni eseguibili dall’agente (la testina) nella griglia devono rispettare (esempio vincoli: v1=”l’agente può compiere un solo passo alla volta”, v2=”l’agente si può muovere solo fra celle adiacenti”, etc.). La descrizione sarà un testo che descrive le regole da rispettare e le assunzioni desunte dall’analisi del dominio.
 
