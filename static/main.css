@@ -40,6 +40,7 @@ body {
     right: 20px;
     z-index: 1000;
     border-radius: 10px;
+    font-size: xx-large;
   }
 
   .plots {
@@ -48,8 +49,6 @@ body {
 
   footer {
     width: 100%;
-    position: fixed;
-    bottom: 0;
     font-size: xx-large;
   }
 
