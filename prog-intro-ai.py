@@ -8,6 +8,7 @@ import cv2
 import numpy as np
 import signal
 import warnings
+import glob
 from flask import Flask, Response, render_template
 
 
@@ -72,7 +73,9 @@ def save_image():
 @app.route('/train_model', methods=['POST'])
 def train_model():
     training_operation, X_test, y_test, seq_lett_model = lm.train_model()
-    os.system("find './static/plots/' -name 'ROI_*' -exec rm {} \;")
+    # command to delete all plots in directory /static/plots
+    for f in glob.glob('static/plots/*.png'):
+        os.remove(f)
     metrics_per_class = lm.model_statistics(training_operation, X_test, y_test, seq_lett_model)
 
     # Evaluate the model's performance on the test data. 
