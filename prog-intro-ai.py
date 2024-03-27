@@ -56,129 +56,6 @@ def grid_translation(grid):
     res = np.vectorize(label_mapping.get)(grid)
     return res
 
-def main():
-    #ask user terminale input for training model
-    train_flag  = input("Do you want to train the model? (y/n): ")  
-    if train_flag == 'y':
-        training_operation, X_test, y_test, seq_lett_model = lm.train_model()
-        lm.model_statistics(training_operation, X_test, y_test, seq_lett_model)
-    
-    # Load the trained model from the file
-    seq_lett_model = lm.keras.models.load_model('seq_lett_model.keras')
-
-    while True:
-        try:
-            warnings.filterwarnings("ignore")
-            # Delete all the files in the manipulated_grids folder
-            lm.os.system("find './manipulated_grids/' -name 'ROI_*' -exec rm {} \;")
-            # Ask user to take a picture of the grid or if they want to use a default image from file explorer
-            if input("Do you want to take a picture of the grid? If you press n you have to pick an image from your filesystem (y/n): ") == 'y':
-                frame = lm.capture_image_from_webcam()
-                timestamp = datetime.datetime.now().strftime('%Y-%m-%d_%H-%M-%S')
-                image_path = f'./grids/grid_{timestamp}.png'
-
-                lm.save_image(frame, image_path)
-            else:
-                path = input("Enter the name of the image: ")
-                image_path = f'./grids/{path}.png'
-
-            # Load the image
-            image = cv2.imread(image_path)
-            if image is None:
-                raise Exception(f"Error loading image: {image_path}")
-
-            processed_image = lm.preprocess_image_for_detection(image)
-
-            contours, _ = cv2.findContours(processed_image, cv2.RETR_TREE, cv2.CHAIN_APPROX_SIMPLE)
-            #contours = sorted(contours, key=cv2.contourArea, reverse=True)
-            ROIs, n = lm.extract_ROIs(contours, image.copy(), 0.02)
-
-            # Save the ROIs to the manipulated_grids folder
-            for i, ROI in enumerate(ROIs):
-                lm.save_image(ROI, f'./manipulated_grids/ROI_{i}.png')
-
-            grid = lm.prediction(ROIs, n, seq_lett_model)
-
-            break
-        except Exception as e:
-            print(f"An error occurred: {e}")
-            retry = input("Do you want to retry? (y/n): ")
-            if retry.lower() != 'y':
-                sys.exit(1)                
-
-    """
-    grid=np.array([
-        [0, 3, 3], 
-        [3, 3, 2],
-        [3, 3, 3],])
-    
-    grid=np.array([[2, 1, 2, 3, 1],
-        [2, 3, 1, 3, 1],
-        [0, 1, 2, 3, 2],
-        [2, 1, 3, 3, 2]])
-    """
-    
-    # Define the initial state
-    problem=uc.UniformColoring(uc.initialize_state(grid),uc.Heuristic.heuristic_color_use_most_present)
-
-    t = 10
-    signal.signal(signal.SIGALRM, lambda signum, frame: handler(signum, frame, t))
-    signal.alarm(t)
-
-    try:
-        # function call for the UCS 
-        start_time = time.time()
-        print("Compute uniform_cost_search...")
-        ucs = uc.best_first_graph_search(problem, lambda node: node.path_cost)
-        print("\n")
-        print("--- %s seconds ---" % (time.time() - start_time))
-        print("Final state: \n",ucs.state.grid)
-        print("\n")
-        print("Solution cost:",ucs.path_cost)
-        print(ucs.solution())
-    except TimeoutError as e:
-        # Exception handler if time is expired
-        print(e)
-    finally:
-        # Timer reset if the function returns before time 
-        signal.alarm(0)
-
-    signal.signal(signal.SIGALRM, lambda signum, frame: handler(signum, frame, t))
-    signal.alarm(t)
-        
-    try:
-        # function call for the ids 
-        start_time = time.time()
-        ids = uc.iterative_deepening_search(problem)
-        print("Final state: \n",ids.state.grid)
-        print("\n")
-        print("Solution cost:",ids.path_cost)
-        print("\n")
-        print(ids.solution())
-    except TimeoutError as e:
-        # Exception handler if time is expired
-        print(e)
-    finally:
-        # Timer reset if the function returns before time 
-        signal.alarm(0)
-
-    astar = uc.astar_search(problem, display=True)
-    print("Final state: \n",astar.state.grid)
-    print("\n")
-    print("Solution cost:",astar.path_cost)
-    print("\n")
-    print(astar.solution())
-
-    greedy = uc.greedy_search(problem, display=True)
-    print("Final state: \n",greedy.state.grid)
-    print("\n")
-    print("Solution cost:",greedy.path_cost)
-    print("\n")
-    print(greedy.solution())
-
-    # Delete all the files in the manipulated_grids folder after computing
-    #os.system("find './manipulated_grids/' -name 'ROI_*' -exec rm {} \;")
-
 @app.route('/')
 def index():
     return render_template('index.html')
@@ -218,7 +95,7 @@ def process_image():
     ucs = ids = astar = greedy = None
 
     #image_path = get_last_image_path('./grids/')
-    image_path = './grids/5x3.png' # for testing purposes
+    image_path = './grids/3x3.png' # for testing purposes
     print(f"Processing image: {image_path}")
     image = cv2.imread(image_path)
     if image is None:
@@ -236,31 +113,49 @@ def process_image():
 
     grid = lm.prediction(ROIs, n, seq_lett_model)
 
+    if grid is None:
+        print("Cannot execute search algorithms")
+        return render_template('Error.html')
+       
     # Define the initial state
     problem=uc.UniformColoring(uc.initialize_state(grid),uc.Heuristic.heuristic_color_use_most_present)
 
     # Measure the execution time of UCS
+    ucs_succ = "UCS successfully found a solution"
     start_time = time.time()
-    ucs = uc.best_first_graph_search(problem, lambda node: node.path_cost)
+    ucs, ucs_succ = uc.best_first_graph_search(problem, lambda node: node.path_cost)
     ucs_time = time.time() - start_time
+    if ucs_succ == -1:
+        ucs_succ = "UCS did not found a solution"
 
     # Measure the execution time of IDS
+    ids_succ = "IDS successfully found a solution"
     start_time = time.time()
-    ids = uc.iterative_deepening_search(problem)
+    ids, f_succ = uc.iterative_deepening_search(problem)
     ids_time = time.time() - start_time
+    if f_succ == -1:
+        ids_succ = "IDS did not found a solution"
 
     # Measure the execution time of A*
     start_time = time.time()
-    astar = uc.astar_search(problem, display=True)
+    astar, gr_succ = uc.astar_search(problem)
     astar_time = time.time() - start_time
 
     # Measure the execution time of Greedy search
     start_time = time.time()
-    greedy = uc.greedy_search(problem, display=True)
+    greedy, gr_succ = uc.greedy_search(problem)
     greedy_time = time.time() - start_time
 
     grid_show=grid_translation(grid)
     grid_show = grid_show.tolist()
+    grid_ucs = grid_translation(ucs.state.grid)
+    grid_ucs = grid_ucs.tolist()
+    grid_ids = grid_translation(ids.state.grid)
+    grid_ids = grid_ids.tolist()
+    grid_astar = grid_translation(astar.state.grid)
+    grid_astar = grid_astar.tolist()
+    grid_greedy = grid_translation(greedy.state.grid)
+    grid_greedy = grid_greedy.tolist()
 
     # Delete all the files in the manipulated_grids folder after computing
     os.system("find './manipulated_grids/' -name 'ROI_*' -exec rm {} \;")
@@ -273,7 +168,13 @@ def process_image():
                            ucs_time=ucs_time,
                            ids_time=ids_time,
                            astar_time=astar_time,
-                           greedy_time=greedy_time)
+                           greedy_time=greedy_time,
+                           ucs_succ=ucs_succ,
+                           ids_succ=ids_succ,
+                           grid_ucs=grid_ucs,
+                           grid_ids=grid_ids,
+                           grid_astar=grid_astar,
+                           grid_greedy=grid_greedy)
 
 if __name__ == "__main__":
     #main()

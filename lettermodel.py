@@ -384,15 +384,28 @@ def prediction(ROIs, n, seq_lett_model):
             max = np.where(prediction == np.amax(prediction))
             l.append(int(max[1][0]))
 
+    # Check if T is present in the predictions
+    if 0 not in l:
+        print("T not found in the grid")
+        return None  # Return none as an error
+
     # Create the grid from the predictions
     nrow = len(l) // n if n < len(l) else n // len(l)
     nrow = int(nrow)
 
     mat = np.array(list(reversed(l)))
     if nrow == 1:
-        grid = mat.reshape(nrow, n-1)  
+        try:
+            grid = mat.reshape(nrow, n-1)  
+        except:
+            print("Reshape error")
+            return None
     else:
-        grid = mat.reshape(nrow, n)
+        try:
+            grid = mat.reshape(nrow, n)  
+        except:
+            print("Reshape error")
+            return None
 
     # print the grid
     print(grid)

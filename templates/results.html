@@ -17,7 +17,7 @@
   <div class>
     <h3 class="text-primary font-weight-bold">UCS Results</h3>
     <table class="table-bordered table-spacing">
-      {% for row in ucs.state.grid %}
+      {% for row in grid_ucs %}
       <tr>
         {% for cell in row %}
         <td>{{ cell }}</td>
@@ -27,13 +27,14 @@
     </table>
     <p>Solution cost: {{ ucs.path_cost }}</p>
     <p>Time of execution: {{ucs_time}}</p>
+    <p>Solution success: {{ucs_succ}}</p>
     <p>Solution: {{ ucs.solution() }}</p>
   </div>
   <br />
   <div>
     <h3 class="text-primary font-weight-bold">IDS Results</h3>
     <table class="table-bordered table-spacing">
-      {% for row in ids.state.grid %}
+      {% for row in grid_ids %}
       <tr>
         {% for cell in row %}
         <td>{{ cell }}</td>
@@ -43,13 +44,14 @@
     </table>
     <p>Solution cost: {{ ids.path_cost }}</p>
     <p>Time of execution: {{ids_time}}</p>
+    <p>Solution success: {{ids_succ}}</p>
     <p>Solution: {{ ids.solution() }}</p>
   </div>
   <br />
   <div>
     <h3 class="text-primary font-weight-bold">A* Results</h3>
     <table class="table-bordered table-spacing">
-      {% for row in astar.state.grid %}
+      {% for row in grid_astar %}
       <tr>
         {% for cell in row %}
         <td>{{ cell }}</td>
@@ -67,7 +69,7 @@
       Greedy Best First Search Results
     </h3>
     <table class="table-bordered table-spacing">
-      {% for row in greedy.state.grid %}
+      {% for row in grid_greedy %}
       <tr>
         {% for cell in row %}
         <td>{{ cell }}</td>

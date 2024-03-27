@@ -22,6 +22,11 @@ function trainModel() {
     $("#progress-container").show();
     $(".progress-bar").css("width", "0%");
     $("#progress-message").text("Training in progress...");
+
+    // Scorri la finestra fino alla fine della pagina
+    $('html, body').animate({
+      scrollTop: $(document).height() - $(window).height()
+    }, 1000);
   
     let progress = 0;
     const interval = setInterval(function () {
@@ -43,6 +48,11 @@ function trainModel() {
       // Nascondi la barra di avanzamento dopo il completamento del training
       $("#progress-container").hide();
       clearInterval(interval);
+
+      // Scorri la finestra fino alla fine della pagina
+      $('html, body').animate({
+        scrollTop: $(document).height() - $(window).height()
+      }, 1000);
     });
   }
 
@@ -54,6 +64,11 @@ function trainModel() {
     $("#progress-container").show();
     $(".progress-bar").css("width", "0%");
     $("#progress-message").text("Processing image...");
+
+    // Scorri la finestra fino alla fine della pagina
+    $('html, body').animate({
+      scrollTop: $(document).height() - $(window).height()
+    }, 1000);
   
     let progress = 0;
     const interval = setInterval(function () {
@@ -75,6 +90,11 @@ function trainModel() {
       // Nascondi la barra di avanzamento dopo il completamento dell'elaborazione dell'immagine
       $("#progress-container").hide();
       clearInterval(interval);
+
+      // Scorri la finestra fino alla fine della pagina
+      $('html, body').animate({
+        scrollTop: $(document).height() - $(window).height()
+      }, 1000);
     });
   }
 

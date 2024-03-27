@@ -180,7 +180,7 @@ class UniformColoring(Problem):
         and related algorithms try to maximize this value."""
         raise NotImplementedError
     
-def best_first_graph_search(problem, f, display=False):
+def best_first_graph_search(problem, f):
     """Search the nodes with the lowest f scores first.
     You specify the function f(node) that you want to minimize; for example,
     if f is a heuristic estimate to the goal, then we have greedy best
@@ -202,9 +202,9 @@ def best_first_graph_search(problem, f, display=False):
         #print("#NODE:", node.state.i, node.state.j, node.state.grid)
         lookup_frontier.remove(id(node))
         if problem.goal_test(node.state):
-            if display:
-                print(len(explored), "paths have been expanded and", len(frontier), "paths remain in the frontier")
-            return node
+            return node, 1
+        elif len(explored) > 50000:
+            return node, -1
         explored.add(node.state.id)
         for child in node.expand(problem):
             #print("#CHILD:", node.state.i, node.state.j, node.state.grid)
@@ -216,7 +216,7 @@ def best_first_graph_search(problem, f, display=False):
                     del frontier[child]
                     lookup_frontier.add(id(child))
                     frontier.append(child)
-    return None
+    return None, -1
 
 def is_cycle(node):
     current = node
@@ -233,6 +233,8 @@ def depth_limit_search(problem, limit):
         node = frontier.pop()
         if problem.goal_test(node.state):
             return node
+        elif limit == 25:
+            return node
         if node.depth < limit:
             explored.add(node.state.id)
             for child in node.expand(problem):
@@ -245,25 +247,27 @@ def depth_limit_search(problem, limit):
 def iterative_deepening_search(problem):
     for depth in range(sys.maxsize):
         result = depth_limit_search(problem, depth)
-        if result != None:
-            return result
-    return None
+        if result != None and depth < 25:
+            return result, 1
+        elif result != None and depth == 25:
+            return result, -1
+    return None, -1
 
-def astar_search(problem, h=None, display=True): 
+def astar_search(problem, h=None): 
     """A* search is best-first graph search with f(n) = g(n)+h(n).
     You need to specify the h function when you call astar_search, or
     else in your Problem subclass."""
     h = memoize(h or problem.h, 'h')
-    end = best_first_graph_search(problem, lambda n: n.path_cost + h(n), display)
-    return end
+    end, bfgs_succ = best_first_graph_search(problem, lambda n: n.path_cost + h(n))
+    return end, bfgs_succ
 
-def greedy_search(problem, h=None, display=True):
+def greedy_search(problem, h=None):
     """
     Greedy best-first search is accomplished by specifying f(n) = h(n).
     """
     h = memoize(h or problem.h, 'h')
-    end = best_first_graph_search(problem, lambda n: h(n), display)
-    return end
+    end, bfgs_succ = best_first_graph_search(problem, lambda n: h(n))
+    return end, bfgs_succ
 
 def initialize_state(grid):
     for i in range(grid.shape[0]):
