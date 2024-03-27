@@ -19,17 +19,20 @@ body {
     color: transparent; /* Rende il testo trasparente */
   }
 
+
   .buttons {
     padding: 15px;
     margin: 15px;
     border-radius: 15px;
     width: 300px;
     font-weight: bolder;
-    font-size: xx-large;
+    font-size: x-large auto;
   }
 
   .table-spacing td {
     padding: 15px;
+    padding-left: 30px;
+    padding-right: 30px;
     border: solid black 3px;
     font-weight: bold;
   }
@@ -40,7 +43,7 @@ body {
     right: 20px;
     z-index: 1000;
     border-radius: 10px;
-    font-size: xx-large;
+    font-size: x-large auto;
   }
 
   .plots {
@@ -49,10 +52,12 @@ body {
 
   footer {
     width: 100%;
-    font-size: xx-large;
+    font-size: xx-large auto;
+    position: fixed;
+    bottom: 0px;
   }
 
   .results {
-    font-size: xx-large;
+    font-size: x-large auto;
     padding: 60px
   }
