@@ -182,7 +182,7 @@ Il modello CNN viene compilato utilizzando la funzione di perdita `sparse_catego
   Formula: Accuratezza = (TP + TN) / (TP + TN + FP + FN), dove TP sono i veri positivi, TN sono i veri negativi, FP sono i falsi positivi e FN sono i falsi negativi.
 - *Perdita (Loss)*: La perdita è una misura dell'errore tra le predizioni del modello e le etichette vere. L'obiettivo durante l'addestramento è minimizzare questa perdita.
 
-![[Screenshot 2024-03-26 at 11.24.14.png]]
+![[metrics.png]]
 
 Viene anche utilizzato il callback `EarlyStopping` per interrompere l'addestramento se la perdita sui dati di convalida smette di diminuire.
 
@@ -243,7 +243,7 @@ Qui sotto si riporta nello specifico il processo di ricerca informata e non info
 **Produzione della Soluzione**: Se esiste una soluzione, cioè una sequenza di azioni che porta dallo stato iniziale allo stato obiettivo, viene restituita dal solutore. La sequenza di azioni rappresenta le mosse da effettuare sulla griglia per raggiungere lo stato obiettivo.
 
 Esempio di risultato mostrato
-![[Screenshot 2024-03-26 at 11.50.07.png]]
+![[prediction.png]]
 ## Introduzione all'Applicazione Web
 
 L'applicazione web sviluppata utilizza Flask come framework per implementare le funzionalità di backend e fornisce un'interfaccia utente intuitiva per risolvere il problema della colorazione uniforme.
@@ -251,7 +251,7 @@ L'applicazione web sviluppata utilizza Flask come framework per implementare le 
 **Spiegazione del Programma**
 Il paragrafo iniziale dell'applicazione fornisce una descrizione dettagliata del funzionamento del programma e del problema della colorazione uniforme. Viene chiarito l'obiettivo del programma e come esso sia in grado di risolvere il problema attraverso l'utilizzo di algoritmi di ricerca.
 
-![[Screenshot 2024-03-26 at 13.48.50.png]]
+![[home.png]]
 
 **Acquisizione e Salvataggio dell'Immagine**
 Nella sezione dedicata all'acquisizione dell'immagine, l'utente può utilizzare la webcam del proprio computer per scattare una foto alla griglia che desidera processare. Una volta catturata l'immagine, è possibile salvarla premendo il pulsante "Save image". L'immagine salvata viene memorizzata su `grids`, una struttura dati utilizzata per conservare lo stato iniziale del problema.
@@ -262,16 +262,16 @@ Dopo aver salvato l'immagine, l'utente può procedere con la sua elaborazione pr
 **Addestramento del Modello**
 Il pulsante "Train model" avvia la fase di addestramento del modello utilizzato per risolvere il problema. Durante il training, vengono mostrati grafici e metriche per valutare le prestazioni del modello.
 
-![[Screenshot 2024-03-26 at 13.38.13.png]]
+![[buttons.png]]
 
 **Feedback durante l'Esecuzione**
 Durante l'elaborazione dell'immagine e l'addestramento del modello, l'applicazione fornisce un feedback visivo sotto forma di una barra di avanzamento. Questo permette all'utente di comprendere che il programma è in esecuzione e di monitorare il progresso delle operazioni.
 
 Alcuni degli output mostrati sugli algoritmi di ricerca
-![[Screenshot 2024-03-26 at 14.04.21.png]]
+![[algoritmi.png]]
 
 Output mostrato dalla fase di training
-![[Screenshot 2024-03-26 at 14.03.45.png]]
+![[plots.png]]
 
 ## Statistiche e Valutazione dei Risultati (da sistemare sulla base degli aggiornamenti sul modello)
 
