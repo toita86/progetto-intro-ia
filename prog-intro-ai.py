@@ -72,6 +72,7 @@ def save_image():
 @app.route('/train_model', methods=['POST'])
 def train_model():
     training_operation, X_test, y_test, seq_lett_model = lm.train_model()
+    os.system("find './static/plots/' -name 'ROI_*' -exec rm {} \;")
     metrics_per_class = lm.model_statistics(training_operation, X_test, y_test, seq_lett_model)
 
     # Evaluate the model's performance on the test data. 

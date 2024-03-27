@@ -13,7 +13,7 @@
       {% endfor %}
     </table>
   </div>
-  <br />
+  <br /><br />
   <div class>
     <h3 class="text-primary font-weight-bold">UCS Results</h3>
     <table class="table-bordered table-spacing">
@@ -25,10 +25,10 @@
       </tr>
       {% endfor %}
     </table>
-    <p>Solution cost: {{ ucs.path_cost }}</p>
-    <p>Time of execution: {{ucs_time}}</p>
-    <p>Solution success: {{ucs_succ}}</p>
-    <p>Solution: {{ ucs.solution() }}</p>
+    <p><strong>Solution cost:</strong> {{ ucs.path_cost }}</p>
+    <p><strong>Time of execution:</strong> {{ucs_time}}</p>
+    <p><strong>Solution success:</strong> {{ucs_succ}}</p>
+    <p><strong>Solution:</strong> {{ ucs.solution() }}</p>
   </div>
   <br />
   <div>
@@ -42,10 +42,10 @@
       </tr>
       {% endfor %}
     </table>
-    <p>Solution cost: {{ ids.path_cost }}</p>
-    <p>Time of execution: {{ids_time}}</p>
-    <p>Solution success: {{ids_succ}}</p>
-    <p>Solution: {{ ids.solution() }}</p>
+    <p><strong>Solution cost:</strong> {{ ids.path_cost }}</p>
+    <p><strong>Time of execution:</strong> {{ids_time}}</p>
+    <p><strong>Solution success:</strong> {{ids_succ}}</p>
+    <p><strong>Solution:</strong> {{ ids.solution() }}</p>
   </div>
   <br />
   <div>
@@ -59,9 +59,9 @@
       </tr>
       {% endfor %}
     </table>
-    <p>Solution cost: {{ astar.path_cost }}</p>
-    <p>Time of execution: {{astar_time}}</p>
-    <p>Solution: {{ astar.solution() }}</p>
+    <p><strong>Solution cost:</strong> {{ astar.path_cost }}</p>
+    <p><strong>Time of execution:</strong> {{astar_time}}</p>
+    <p><strong>Solution:</strong> {{ astar.solution() }}</p>
   </div>
   <br />
   <div>
@@ -77,9 +77,9 @@
       </tr>
       {% endfor %}
     </table>
-    <p>Solution cost: {{ greedy.path_cost }}</p>
-    <p>Time of execution: {{greedy_time}}</p>
-    <p>Solution: {{ greedy.solution() }}</p>
+    <p><strong>Solution cost:</strong> {{ greedy.path_cost }}</p>
+    <p><strong>Time of execution:</strong> {{greedy_time}}</p>
+    <p><strong>Solution:</strong> {{ greedy.solution() }}</p>
   </div>
 </div>
 <br /><br /><br />
