@@ -11,11 +11,18 @@ class Colors(Enum):
     YELLOW = 2
     GREEN = 3
 
+    def __str__(self):
+        # return lower case name
+        return '[ Color : ' + self.name.lower() + ' ]'
+
 class Directions(Enum):
     UP = (-1, 0)
     DOWN = (1, 0)
     LEFT = (0, -1)
     RIGHT = (0, 1)
+
+    def __str__(self):
+        return '[ Direction : ' + self.name.lower() + ' ]'
 
 class Heuristic(Enum):
     heuristic_color_use_most_present = 1
@@ -203,7 +210,7 @@ def best_first_graph_search(problem, f):
         lookup_frontier.remove(id(node))
         if problem.goal_test(node.state):
             return node, 1
-        elif len(explored) > 50000:
+        elif len(explored) > 60000:
             return node, -1
         explored.add(node.state.id)
         for child in node.expand(problem):

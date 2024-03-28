@@ -52,6 +52,7 @@
     <div
       class="container d-flex flex-column justify-content-center align-items-center vh-50"
     >
+      <h2 class="font-weight-bold">You can choose between taking a pic</h2>
       <img
         class="img-fluid"
         src="{{url_for('video_feed')}}"
@@ -59,6 +60,31 @@
         style="border-radius: 15px; width: 4000px auto"
       />
     </div>
+    <div class="containerb text-center" style="margin-top: 20px">
+      <h2 class="font-weight-bold">or maybe upload an image</h2>
+      <p>The last image uploaded will be used as the input for the coloring</p>
+      <form id="upload-form" enctype="multipart/form-data">
+        <div class="input-group mb-3">
+          <input
+            type="file"
+            id="image-selector"
+            class="form-control"
+            name="file"
+            accept="image/*"
+          />
+          <div class="d-inline-flex">
+            <button
+              class="btn btn-primary"
+              type="submit"
+              onclick="uploadImage(event)"
+            >
+              Upload
+            </button>
+          </div>
+        </div>
+      </form>
+    </div>
+    <div class="container text-center" id="uploaded-image"></div>
     <div class="container text-center" style="padding-bottom: 80px">
       <button id="save-image-button" class="buttons" onclick="saveImage()">
         <span class="rainbow">Save image</span>

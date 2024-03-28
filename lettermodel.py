@@ -13,7 +13,6 @@ from sklearn.metrics import ConfusionMatrixDisplay
 from sklearn.metrics import recall_score, precision_score, f1_score, accuracy_score
 
 
-
 # Import the necessary functions from the emnist library
 from emnist import extract_training_samples
 from emnist import extract_test_samples
@@ -167,6 +166,7 @@ def model_statistics(training_operation, X_test, y_test, seq_lett_model):
 
     # Saves confusion matrix to the plots folder
     plt.savefig(os.path.join(plot_path, 'confusion_matrix.png')) 
+    plt.close()
 
     from sklearn.metrics import classification_report
     #class_report = classification_report(y_test, y_pred)
