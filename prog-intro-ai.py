@@ -9,7 +9,8 @@ import numpy as np
 import signal
 import warnings
 import glob
-from flask import Flask, Response, render_template
+from werkzeug.utils import secure_filename
+from flask import Flask, Response, render_template, request, send_from_directory, url_for
 
 
 '''
@@ -57,6 +58,18 @@ def grid_translation(grid):
     res = np.vectorize(label_mapping.get)(grid)
     return res
 
+def solution_formatter(solution):
+    solution = ', '.join(str(s) for s in solution)
+    return solution
+
+@app.route('/grids/<filename>')
+def serve_grid(filename):
+    ''''
+    This function is used to serve the image when the client requests it.
+    The function returns the image file from the directory 'grids' with the filename passed as parameter.
+    '''
+    return send_from_directory('grids', filename)
+
 @app.route('/')
 def index():
     return render_template('index.html')
@@ -98,8 +111,8 @@ def process_image():
 
     ucs = ids = astar = greedy = None
 
-    #image_path = get_last_image_path('./grids/')
-    image_path = './grids/3x3.png' # for testing purposes
+    image_path = get_last_image_path('./grids/')
+    #image_path = './grids/3x3.png' # for testing purposes
     print(f"Processing image: {image_path}")
     image = cv2.imread(image_path)
     if image is None:
@@ -161,6 +174,11 @@ def process_image():
     grid_greedy = grid_translation(greedy.state.grid)
     grid_greedy = grid_greedy.tolist()
 
+    ucs_sol = solution_formatter(ucs.solution())
+    ids_sol = solution_formatter(ids.solution())
+    astar_sol = solution_formatter(astar.solution())
+    greedy_sol = solution_formatter(greedy.solution())
+
     # Delete all the files in the manipulated_grids folder after computing
     os.system("find './manipulated_grids/' -name 'ROI_*' -exec rm {} \;")
     return render_template('results.html', 
@@ -178,8 +196,28 @@ def process_image():
                            grid_ucs=grid_ucs,
                            grid_ids=grid_ids,
                            grid_astar=grid_astar,
-                           grid_greedy=grid_greedy)
+                           grid_greedy=grid_greedy,
+                           ucs_sol=ucs_sol,
+                           ids_sol=ids_sol,
+                           astar_sol=astar_sol,
+                           greedy_sol=greedy_sol)
+
+@app.route('/upload', methods=['POST'])
+def upload_file():
+    '''
+    This function is used to upload an image from the client side to the server side.
+    The image is saved in the grids folder and the URL of the image is returned to the client side.
+    ''' 
+    if 'file' not in request.files:
+        return 'No file part'
+    file = request.files['file']
+    if file.filename == '':
+        return 'No selected file'
+    if file:
+        filename = secure_filename(file.filename)
+        file.save(os.path.join('grids', filename))
+        image_url = url_for('serve_grid', filename=filename)
+        return image_url
 
 if __name__ == "__main__":
-    #main()
     app.run(host='0.0.0.0', port=5050,debug=True)

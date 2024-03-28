@@ -14,6 +14,28 @@ function saveImage() {
         });
 }
 
+function uploadImage(event) {
+  // Allows to upload an image and update the content of the div with the uploaded image
+  event.preventDefault();
+  var formData = new FormData();
+  formData.append('file', document.getElementById('image-selector').files[0]);
+
+  fetch('/upload', {
+      method: 'POST',
+      body: formData
+  })
+  .then(response => response.text())
+  .then(data => {
+      // Aggiorna il contenuto del div con l'immagine caricata
+      document.getElementById('uploaded-image').innerHTML = `<img src="${data}" alt="uploaded image" style="max-width: 100%; max-height: 500px;">`;
+  })
+  .catch(error => {
+      console.error('Error:', error);
+  });
+}
+
+document.getElementById('upload-form').addEventListener('submit', uploadImage);
+
 function trainModel() {
     $("#success-message").empty();
     $("#train-model-button").hide();
