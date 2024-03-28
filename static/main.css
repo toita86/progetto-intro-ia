@@ -1,5 +1,24 @@
 body {
     font-family: Arial, Helvetica, sans-serif;
+    height: 100%;
+    padding: 0;
+  }
+
+  .header {
+    display: flex; 
+    justify-content: space-between; 
+    align-items: center;
+  }
+  
+  .header h2 {
+    flex: 1; /* This will make the header text take up the remaining space */
+    text-align: center; /* Center the header text */
+  }
+
+  .header button {
+    margin-right: 20px;
+    /* increment size of the button anf automatically decrease at reduction of screen size*/
+    font-size: calc(0.5em + 1vw);
   }
 
   .rainbow {
@@ -28,6 +47,10 @@ body {
     font-weight: bolder;
     font-size: x-large auto;
   }
+  
+  .buttons:hover {
+    background-color: #e0c6de;
+  }
 
   .table-spacing td {
     padding: 15px;
@@ -37,6 +60,7 @@ body {
     font-weight: bold;
   }
 
+  /*
   .scroll-follow-button {
     position: fixed;
     bottom: 20px;
@@ -44,20 +68,24 @@ body {
     z-index: 1000;
     border-radius: 10px;
     font-size: x-large auto;
-  }
+  }*/
 
   .plots {
     width: 100%;
   }
 
-  footer {
+  .containerf {
+    min-height: 100%;
+    position: relative;
+  }
+
+  .footer {
+    bottom: 0;
     width: 100%;
-    font-size: xx-large auto;
-    position: fixed;
-    bottom: 0px;
+    font-size: x-large;
   }
 
   .results {
-    font-size: x-large auto;
+    font-size: xx-large auto;
     padding: 60px
   }

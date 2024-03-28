@@ -1,3 +1,26 @@
+$(document).ready(function() {
+  var header = $(".header");
+  var footer = $(".footer");
+
+  // Array di colori consentiti per lo sfondo, scelti manualmente per contrastare bene con il testo bianco
+  var allowedColors = ["#808080", "#333333", "#483C32", "#708090", "#C0C0C0", "#36454F", "#B2BEB5", "#800080", "#0000FF", "#008000"
+];
+
+  // Genera un colore casuale consentito per lo sfondo
+  function randomColor() {
+      return allowedColors[Math.floor(Math.random() * allowedColors.length)];
+  }
+
+  // Imposta il colore casuale per l'area di intestazione e il piè di pagina
+  var backgroundColor = randomColor();
+  header.css("background-color", backgroundColor);
+  footer.css("background-color", backgroundColor);
+
+  // Imposta il colore del testo su bianco per garantire un buon contrasto
+  header.css("color", "#FFFFFF");
+  footer.css("color", "#FFFFFF");
+});
+
 function saveImage() {
     $("#train-model-button").hide();
     fetch("/save_image", { method: "POST" })
