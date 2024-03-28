@@ -26,6 +26,7 @@ class Directions(Enum):
 
 class Heuristic(Enum):
     heuristic_color_use_most_present = 1
+    heuristic_color_nearest_neighbor_distance = 2
 
 class State():
     def __init__(self, grid, i, j):
@@ -132,6 +133,8 @@ class UniformColoring(Problem):
     def heuristic(self, node, color_choice):
         if self.heuristic_type == Heuristic.heuristic_color_use_most_present:
             return self.heuristic_color_use_most_present(node, color_choice)
+        elif self.heuristic_type == Heuristic.heuristic_color_nearest_neighbor_distance:
+            return self.heuristic_color_nearest_neighbor_distance(node, color_choice)
     
     def heuristic_color_use_most_present(self, node, color_choice):
         """Return the heuristic value for a given state. Default heuristic
@@ -153,6 +156,31 @@ class UniformColoring(Problem):
         for to_color in not_colored:
             h += self.manhattan_distance((i, j), to_color)
         
+        return h
+    
+    def heuristic_color_nearest_neighbor_distance(self, node, color): 
+        h = 0
+        grid = node.state.grid
+        not_colored = []
+        for i in range(grid.shape[0]):
+            for j in range(grid.shape[1]):
+                if(grid[i][j] != color and grid[i][j] != 0):
+                    not_colored.append((i, j))
+                    h += color
+        i = node.state.i
+        j = node.state.j
+        for x in range(len(not_colored)):
+            distance = (self.manhattan_distance((not_colored[0][0],not_colored[0][1]),(i,j)), not_colored[0])
+            for tile in not_colored:  # get closest not colored tile
+                # manhattan distance
+                temp_distance = (self.manhattan_distance((tile[0],tile[1]),(i,j)), tile)
+                if (temp_distance < distance):
+                    distance = temp_distance
+            h += (distance[0] * MOV_COST)
+            i = distance[1][0]
+            j = distance[1][1]
+            not_colored.remove(distance[1])
+        h += (self.manhattan_distance((self.initial.i,self.initial.j),(i,j)) * MOV_COST)
         return h
     
     def h(self, node):

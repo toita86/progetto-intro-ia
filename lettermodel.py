@@ -274,12 +274,12 @@ def capture_image_from_webcam():
             byte_frame = buffer.tobytes()
             if save_frame:
                 timestamp = datetime.datetime.now().strftime('%Y-%m-%d_%H-%M-%S')
-                image_path = f'./grids/grid_{timestamp}.png'
+                image_path = f'./grids/grid_{timestamp}.png'# Restituisce il frame come un'immagine PNG
                 cv2.imwrite(image_path, frame)
                 save_frame = False
                 return frame
             yield (b'--frame\r\n'
-                   b'Content-Type: image/png\r\n\r\n' + byte_frame + b'\r\n')  # Restituisce il frame come un'immagine PNG
+                   b'Content-Type: image/png\r\n\r\n' + byte_frame + b'\r\n')  
 
 def save_image(image, filename):
     cv2.imwrite(filename, image)

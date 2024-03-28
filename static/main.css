@@ -4,21 +4,21 @@ body {
     padding: 0;
   }
 
-  .header {
+  .footer {
     display: flex; 
     justify-content: space-between; 
     align-items: center;
   }
   
-  .header h2 {
+  .footer h2 {
     flex: 1; /* This will make the header text take up the remaining space */
     text-align: center; /* Center the header text */
   }
 
-  .header button {
+  .footer button {
     margin-right: 20px;
-    /* increment size of the button anf automatically decrease at reduction of screen size*/
-    font-size: calc(0.5em + 1vw);
+    /* increment size of the button slightly anf automatically decrease at reduction of screen size*/
+    font-size: 20px;
   }
 
   .rainbow {
