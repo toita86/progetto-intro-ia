@@ -142,4 +142,3 @@ function trainModel() {
       }, 1000);
     });
   }
-
