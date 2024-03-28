@@ -89,6 +89,7 @@ function trainModel() {
     $.post("/train_model", function (data) {
       $("#results").html(data);
       $("#loadingModal").modal("hide");
+      $("#webcam").hide();
       $("#train-model-button").show();
       // Nascondi la barra di avanzamento dopo il completamento del training
       $("#progress-container").hide();
