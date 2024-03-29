@@ -48,7 +48,7 @@ def grid_translation(grid):
     res = np.vectorize(label_mapping.get)(grid)
     return res
 
-def solution_formatter(solution):
+def solution_formatter(solution): #returns a the formatted list of actions as a string to reach the goal
     solution = ', '.join(str(s) for s in solution)
     return solution
 
@@ -204,10 +204,11 @@ def upload_file():
     if file.filename == '':
         return 'No selected file'
     if file:
-        filename = secure_filename(file.filename)
+        filename = secure_filename(file.filename) #deletes different unsafe characters from the filename
         file.save(os.path.join('grids', filename))
         image_url = url_for('serve_grid', filename=filename)
         return image_url
 
 if __name__ == "__main__":
-    app.run(host='0.0.0.0', port=5050,debug=True)
+    '''Starts the web app. 0.0.0.0 is the server tha listen al requests to the port 5050'''
+    app.run(host='0.0.0.0', port=5050,debug=True) 
