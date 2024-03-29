@@ -1,13 +1,9 @@
 import uniformcoloring as uc
 import lettermodel as lm
 import os
-import sys
 import time
-import datetime
 import cv2
 import numpy as np
-import signal
-import warnings
 import glob
 from werkzeug.utils import secure_filename
 from flask import Flask, Response, render_template, request, send_from_directory, url_for
@@ -36,12 +32,6 @@ passati al sistema tramite un'immagine.
 '''
 
 app = Flask(__name__)
-
-class TimeoutError(Exception):
-    pass
-
-def handler(signum, frame, time):
-    raise TimeoutError(f"Time expired!! Exceded {time} seconds")
 
 def get_last_image_path(directory):
     # List all files in the directory
@@ -111,8 +101,8 @@ def process_image():
 
     ucs = ids = astar = greedy = None
 
-    #image_path = get_last_image_path('./grids/')
-    image_path = './grids/3x3.png' # for testing purposes
+    image_path = get_last_image_path('./grids/')
+    #image_path = './grids/3x3.png' # for testing purposes
     print(f"Processing image: {image_path}")
     image = cv2.imread(image_path)
     if image is None:

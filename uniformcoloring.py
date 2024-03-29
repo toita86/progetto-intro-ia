@@ -2,7 +2,6 @@ from utils import *
 from search import *
 #from aima import Problem, Node #  Import aimacode from the aima-python library
 from enum import Enum
-import time
 
 MOV_COST = 1
 
