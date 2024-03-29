@@ -10,6 +10,7 @@ class Colors(Enum):
     YELLOW = 2
     GREEN = 3
 
+    # converts an object of the class into a string representation
     def __str__(self):
         # return lower case name
         return '[ Color : ' + self.name.lower() + ' ]'
@@ -20,6 +21,7 @@ class Directions(Enum):
     LEFT = (0, -1)
     RIGHT = (0, 1)
 
+    # converts an object of the class into a string representation
     def __str__(self):
         return '[ Direction : ' + self.name.lower() + ' ]'
 

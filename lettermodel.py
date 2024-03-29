@@ -104,14 +104,14 @@ def create_model():
     """
     seq_lett_model = keras.Sequential([
         keras.Input(shape=(28, 28, 1)), # Input shape: 28x28 pixels, 1 color channel
-        keras.layers.Conv2D(28, (3, 3), activation='relu'),
+        keras.layers.Conv2D(28, (3, 3), activation='relu'), #(number of layers, dimension of kernel, activation funztion)
         keras.layers.MaxPooling2D((2, 2)),
         keras.layers.Conv2D(128, (3, 3), activation='relu'),
-        keras.layers.Dropout(0.5),
+        keras.layers.Dropout(0.5), #used for preventing overfitting
         keras.layers.MaxPooling2D((2, 2)),
         keras.layers.Conv2D(128, (3, 3), activation='relu'),
-        keras.layers.Flatten(),
-        keras.layers.Dense(512, activation='relu'),
+        keras.layers.Flatten(), #convert a multidimensional input into a one dimensional vector
+        keras.layers.Dense(512, activation='relu'), #al neuros of this layer are connected with al neurons of the previus layer
         keras.layers.Dropout(0.5),
         keras.layers.Dense(4, activation='softmax')  # Output layer for 4 letters
     ])
@@ -173,6 +173,7 @@ def model_statistics(training_operation, X_test, y_test, seq_lett_model):
     #print(class_report)
     metrics_per_class = {}
 
+    #creates an array of dictionaries with the metrics per class
     for classe in set(y_test):
         precision = round(precision_score(y_test, y_pred, labels=[classe], average='micro'), 2)
         recall = round(recall_score(y_test, y_pred, labels=[classe], average='micro'), 2)
@@ -188,7 +189,7 @@ def model_statistics(training_operation, X_test, y_test, seq_lett_model):
     return metrics_per_class
 
 def train_model():
-    # Extract the training and test samples from the EMNIST dataset
+    # Extract the training and test samples from the EMNIST dataset in a balanced manner
     X_train, y_train = extract_training_samples('balanced')
     X_test, y_test = extract_test_samples('balanced')
 
@@ -200,7 +201,7 @@ def train_model():
     y_train_library = remodulate(y_train_library)
     y_test = remodulate(y_test)
 
-    # Normalize the training and test datasets
+    # Normalize the training and test datasets to help the model for a better classification
     X_train = X_train.astype("float32") / 255
     X_test = X_test.astype("float32") / 255
 
@@ -302,7 +303,7 @@ def preprocess_image_for_detection(image):
         numpy.ndarray: The preprocessed image.
     """
     gray = cv2.cvtColor(image, cv2.COLOR_BGR2GRAY)
-    blur = cv2.GaussianBlur(gray, (7,7), 0)
+    blur = cv2.GaussianBlur(gray, (7,7), 0) 
     thresh = cv2.adaptiveThreshold(blur, 255, 1, 1, 15, 2)
     
     # Use dilation and erosion to emphasize the grid lines
