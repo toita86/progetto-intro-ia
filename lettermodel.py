@@ -258,13 +258,16 @@ def capture_image_from_webcam():
     global save_frame
 
     import platform
-    # Determina il dispositivo video in base al sistema operativo
+    '''# Determina il dispositivo video in base al sistema operativo
     if platform.system() == 'Linux':
         video_device = 0
     else:
-        video_device = 1
+        video_device = 1'''
 
-    cap = cv2.VideoCapture(video_device)
+    cap = cv2.VideoCapture(0)
+    if not cap.isOpened():
+        cap = cv2.VideoCapture(1)
+
     while True:
         success, frame = cap.read()  # Legge un frame dalla telecamera
         if not success:
