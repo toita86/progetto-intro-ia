@@ -21,6 +21,23 @@ body {
     font-size: 20px;
   }
 
+  .header {
+    display: flex; 
+    justify-content: space-between; 
+    align-items: center;
+  }
+  
+  .header h2 {
+    flex: 1; /* This will make the header text take up the remaining space */
+    text-align: center; /* Center the header text */
+  }
+
+  .header button {
+    margin-right: 20px;
+    /* increment size of the button slightly anf automatically decrease at reduction of screen size*/
+    font-size: 20px;
+  }
+
   .rainbow {
     background-image: linear-gradient(
       to right,

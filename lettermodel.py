@@ -367,6 +367,10 @@ def preprocess_image(image_path):
     if im is None:
         print(f"Error loading image: {image_path}")
         return None
+    
+    # Increase brightness
+    brightness_factor = 50
+    im = cv2.add(im, brightness_factor)
 
     im = cv2.bitwise_not(im)
     im = cv2.cvtColor(im, cv2.COLOR_BGR2GRAY)
