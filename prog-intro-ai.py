@@ -101,8 +101,8 @@ def process_image():
 
     ucs = ids = astar = greedy = None
 
-    image_path = get_last_image_path('./grids/')
-    #image_path = './grids/3x3.png' # for testing purposes
+    #image_path = get_last_image_path('./grids/')
+    image_path = './grids/5x3.png' # for testing purposes
     print(f"Processing image: {image_path}")
     image = cv2.imread(image_path)
     if image is None:
@@ -125,7 +125,7 @@ def process_image():
         return render_template('Error.html')
        
     # Define the initial state
-    problem=uc.UniformColoring(uc.initialize_state(grid),uc.Heuristic.heuristic_color_nearest_neighbor_distance)
+    problem=uc.UniformColoring(uc.initialize_state(grid),uc.Heuristic.heuristic_color_use_most_present)
 
     # Measure the execution time of UCS
     ucs_succ = "UCS successfully found a solution"

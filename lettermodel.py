@@ -242,7 +242,7 @@ def train_model():
         X_train, y_train_library, 
         batch_size=batch_size, 
         epochs=epochs, 
-        validation_split=0.1,
+        validation_split=0.2,
         callbacks=[early_stopping])
 
     # Save the trained model to a file so that it can be loaded later for making predictions or continuing training.
