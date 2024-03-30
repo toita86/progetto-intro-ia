@@ -109,6 +109,9 @@ class UniformColoring(Problem):
         return c + MOV_COST
     
     def color_initial_choice(self, node):
+        """
+        This function returns the color that is most present in the grid.
+        """
         # count the number of each color in the grid
         colors = {
             Colors.BLUE.value: 0, 
@@ -138,8 +141,10 @@ class UniformColoring(Problem):
             return self.heuristic_color_nearest_neighbor_distance(node, color_choice)
     
     def heuristic_color_use_most_present(self, node, color_choice):
-        """Return the heuristic value for a given state. Default heuristic
-        function is 0."""
+        """
+        This heuristic function calculates value based on the number of tiles that are not colored with the color_choice
+        and the distance between the current position and the nearest not colored tile.
+        """
         h = 0
         grid = node.state.grid
         not_colored = []
@@ -159,7 +164,12 @@ class UniformColoring(Problem):
         
         return h
     
-    def heuristic_color_nearest_neighbor_distance(self, node, color): 
+    def heuristic_color_nearest_neighbor_distance(self, node, color):
+        '''
+        This heuristic function calculates the distance between the current position and the nearest not colored tile
+        and then calculates the distance between the nearest not colored tile and the next nearest not colored tile
+        and so on until all the tiles are colored.
+        '''
         h = 0
         grid = node.state.grid
         not_colored = []
@@ -171,11 +181,12 @@ class UniformColoring(Problem):
         i = node.state.i
         j = node.state.j
         for x in range(len(not_colored)):
-            distance = (self.manhattan_distance((not_colored[0][0],not_colored[0][1]),(i,j)), not_colored[0])
+            #first distance calculated
+            distance = (self.manhattan_distance((not_colored[0][0],not_colored[0][1]),(i,j)), not_colored[0]) 
             for tile in not_colored:  # get closest not colored tile
                 # manhattan distance
-                temp_distance = (self.manhattan_distance((tile[0],tile[1]),(i,j)), tile)
-                if (temp_distance < distance):
+                temp_distance = (self.manhattan_distance((tile[0],tile[1]),(i,j)), tile) #secod temporary distance calculated
+                if (temp_distance < distance): #if the temp distance is less than the previus distance the temp distance becomes the new distance
                     distance = temp_distance
             h += (distance[0] * MOV_COST)
             i = distance[1][0]
@@ -255,6 +266,10 @@ def best_first_graph_search(problem, f):
     return None, -1
 
 def is_cycle(node):
+    """
+    This function checks if the current node is a cycle.
+    By cycle we mean that the current node has the same state as one of its parents.
+    """
     current = node
     while current.parent != None:
         if current.parent.state.id == current.state.id:
@@ -263,6 +278,9 @@ def is_cycle(node):
     return False
 
 def depth_limit_search(problem, limit):
+    """
+    This function is a depth limited search algorithm that stops when the limit is reached.
+    """
     frontier = [Node(problem.initial)]
     explored = set()
     while frontier:
@@ -290,9 +308,11 @@ def iterative_deepening_search(problem):
     return None, -1
 
 def astar_search(problem, h=None): 
-    """A* search is best-first graph search with f(n) = g(n)+h(n).
+    """
+    A* search is best-first graph search with f(n) = g(n)+h(n).
     You need to specify the h function when you call astar_search, or
-    else in your Problem subclass."""
+    else in your Problem subclass.
+    """
     h = memoize(h or problem.h, 'h')
     end, bfgs_succ = best_first_graph_search(problem, lambda n: n.path_cost + h(n))
     return end, bfgs_succ

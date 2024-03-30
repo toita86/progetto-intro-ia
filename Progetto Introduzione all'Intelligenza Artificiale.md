@@ -32,55 +32,55 @@ La posizione iniziale della testina, la struttura della griglia e la colorazione
 ### Inizializzazione delle librerie e moduli
 
 ```python
-#prog-intro.py
-import uniformcoloring as uc
-import lettermodel as lm
-import os
-import sys
-import time
-import datetime
-import cv2
-import numpy as np
-import signal
-import warnings
-from flask import Flask, Response, render_template
+	#prog-intro.py
+	import uniformcoloring as uc
+	import lettermodel as lm
+	import os
+	import sys
+	import time
+	import datetime
+	import cv2
+	import numpy as np
+	import signal
+	import warnings
+	from flask import Flask, Response, render_template
 
-#lettermodel.py
-import tensorflow as tf
-import numpy as np
-import matplotlib
-matplotlib.use('Agg')
-import matplotlib.pyplot as plt
-import cv2
-import os
-import datetime
-from emnist import list_datasets
-from tensorflow import keras
-from sklearn.metrics import confusion_matrix
-from sklearn.metrics import ConfusionMatrixDisplay
-from sklearn.metrics import recall_score, precision_score, f1_score, accuracy_score
-from emnist import extract_training_samples
-from emnist import extract_test_samplesmanca classfic
-#manca classification report se va implementato
+	#lettermodel.py
+	import tensorflow as tf
+	import numpy as np
+	import matplotlib
+	matplotlib.use('Agg')
+	import matplotlib.pyplot as plt
+	import cv2
+	import os
+	import datetime
+	from emnist import list_datasets
+	from tensorflow import keras
+	from sklearn.metrics import confusion_matrix
+	from sklearn.metrics import ConfusionMatrixDisplay
+	from sklearn.metrics import recall_score, precision_score, f1_score, accuracy_score
+	from emnist import extract_training_samples
+	from emnist import extract_test_samplesmanca classfic
+	#manca classification report se va implementato
 
-#uniformcoloring.py
-from utils import *
-from search import *
-from enum import Enum
-import time
+	#uniformcoloring.py
+	from utils import *
+	from search import *
+	from enum import Enum
+	import time
 ```
 
 Il file python del progetto è suddiviso in 3 files:
 
-- _prog-intro-ai.py_: utilizza OpenCV per integrare la manipolazione delle immagini, l'addestramento del modello e gli algoritmi di ricerca, offrendo un'interfaccia Web per l'interazione mediante l'utilizzo di Flask.
-- _lettermodel.py_: utilizza TensorFlow per addestrare un modello di rete neurale convoluzionale (CNN) sull'insieme di dati EMNIST bilanciato, quindi utilizza il modello per classificare regioni di interesse (ROI) estratte dalle immagini tramite manipolazioni di immagini e contorni. Inoltre implementa Keras per la costruzione, l'addestramento e la valutazione del modello di deep learning
-- _uniformcolring.py_: definisce una classe di problemi di colorazione uniforme e implementa diversi algoritmi di ricerca non informata e informata (come A\* e ricerca greedy) per risolvere il problema. Si utilizza per determinare la sequenza di azioni che porta al raggiungimento dell'obiettivo, dove ogni cella di una griglia deve essere colorata in modo che tutte le celle adiacenti abbiano colori diversi.
+- `_prog-intro-ai.py_`: utilizza OpenCV per integrare la manipolazione delle immagini, l'addestramento del modello e gli algoritmi di ricerca, offrendo un'interfaccia Web per l'interazione mediante l'utilizzo di Flask.
+- `_lettermodel.py_`: utilizza TensorFlow per addestrare un modello di rete neurale convoluzionale (CNN) sull'insieme di dati EMNIST bilanciato, quindi utilizza il modello per classificare regioni di interesse (ROI) estratte dalle immagini tramite manipolazioni di immagini e contorni sfruttando la libreria OpenCV. Inoltre implementa Keras per la costruzione, l'addestramento e la valutazione del modello di deep learning.
+- `_uniformcolring.py_`: definisce una classe di problemi di colorazione uniforme e implementa diversi algoritmi di ricerca non informata e informata (come A\* e ricerca greedy) per risolvere il problema. Si utilizza per determinare la sequenza di azioni che porta al raggiungimento dell'obiettivo, dove ogni cella di una griglia deve essere colorata in modo che tutte le celle adiacenti abbiano colori uguali.
 
 ## Descrizione del dominio e vincoli
 
 **Elementi del dominio:**
 
-- _Celle_: Presenti in una griglia rettangolare nella quale è possibile spostare una testina colorante. Ogni cella ha un colore di partenza ed è possibile ricolorarle con i tre colori disponibili (yellow, blue, green).
+- _Celle_: Presenti in una griglia rettangolare/quadrata nella quale è possibile spostare una testina colorante. Ogni cella ha un colore di partenza ed è possibile ricolorarle con i tre colori disponibili (yellow, blue, green).
 - _Testina colorante_: È l'agente che, nella griglia fornita in input come immagine, può spostarsi tra le celle e cambiarne il colore. Una delle celle rappresenta la posizione iniziale della testina prima di muoversi e sulla quale dovrà ritornare dopo aver svolto le azioni richieste.
 
 **Relazioni:**
@@ -90,7 +90,7 @@ Il file python del progetto è suddiviso in 3 files:
 
 **Regole:**
 
-- La testina può spostarsi nelle sole direzioni nord, sud, est, ovest.
+- La testina può spostarsi nelle sole direzioni UP, DOWN, LEFT, RIGHT.
 - La testina può cambiare colore nella cella in cui è posizionata. Colorare le celle ha un costo che varia in base al colore (cost(B) = 1, cost(Y) = 2, cost(G) = 3).
 - Il passaggio da una cella all'altra ha sempre costo 1.
 - **GOAL**: Colorare tutte le celle dello stesso colore. La testina dovrà trovare un modo per farlo nella maniera più efficiente possibile, sia in termini di colori che di numero di passi effettuati per muoversi tra le celle.
@@ -105,6 +105,7 @@ Il file python del progetto è suddiviso in 3 files:
 - v5="Il costo delle azioni di movimento è uniforme (1), mentre il costo della colorazione dipende dal colore scelto".
 - v6="L'agente non può colorare la posizione di partenza (quindi bisogna trovare un modo per evitarlo)".
 - v7="Dopo che l'agente ha colorato tutte le celle, deve ritornare alla posizione di partenza".
+- v8="Senza la posizione di partenza la griglia non è utilizzabile"
 
 **Esempi di problemi, con possibili soluzioni e costi**:
 ![[esempio.png|500]]
@@ -142,9 +143,9 @@ Di seguito si spiegano nel dettagli le parti fondamentali
 
 ### Classi degli algoritmi di ricerca:
 
-**`best_first_graph_search`**: Implementa l'algoritmo di ricerca best-first graph search, che esplora i nodi con i punteggi f più bassi prima.
+**`best_first_graph_search`**: Implementa l'algoritmo di ricerca best-first-graph-search, che da la precedenza ai nodi con i valori di `f` più bassi.
 
-**`iterative_deepening_search`**: Implementa l'algoritmo di ricerca iterative deepening search, che esegue una ricerca a profondità limitata aumentando progressivamente la profondità massima. Sfrutta l'algoritmo **`depth_limit_search`** con un limite incrementato fino a quando non si troa la soluzione. La funzione **`is_cycle`** verifica se esiste un ciclo nel percorso fino a un nodo.
+**`iterative_deepening_search`**: Implementa l'algoritmo di ricerca iterative deepening search, che esegue una ricerca a profondità limitata aumentando progressivamente la profondità massima. Sfrutta l'algoritmo **`depth_limit_search`** con un limite incrementato fino a quando non si trova la soluzione. La funzione **`is_cycle`** verifica se esiste un ciclo nel percorso fino a un nodo. Per avere un funzionamento abbastanza veloce è stato imposto un limite alla profondità massima di 25.
 
 **`astar_search`**: Implementa l'algoritmo di ricerca A\*, che combina il costo effettivo del percorso finora con un'euristica per stimare il costo rimanente.
 
@@ -165,24 +166,26 @@ Questa euristica cerca di minimizzare la distanza tra le caselle non colorate e 
 **Modello CNN**: Viene definito un modello di rete neurale _convoluzionale_ (CNN) per la classificazione delle immagini. Un modello convoluzionale è una rete neurale _progettata per l'elaborazione delle immagini, utilizzando strati convoluzionali per rilevare pattern e caratteristiche_. Il modello è composto da diversi strati, tra cui strati di convoluzione, strati di max pooling, strati di dropout e strati densamente connessi. Gli strati di convoluzione applicano filtri per estrarre caratteristiche dalle immagini. I max pooling riducono la dimensionalità preservando le caratteristiche principali. Gli strati di dropout combattono l'overfitting disattivando casualmente alcuni neuroni. Gli strati densamente connessi combinano le caratteristiche estratte per la classificazione finale.
 
 ```python
-seq_lett_model = keras.Sequential([
-	keras.Input(shape=(28, 28, 1)), # Input shape: 28x28 pixels, 1 color channel
-	keras.layers.Conv2D(28, (3, 3), activation='relu'),
-	keras.layers.MaxPooling2D((2, 2)),
-	keras.layers.Conv2D(128, (3, 3), activation='relu'),
-	keras.layers.MaxPooling2D((2, 2)),
-	keras.layers.Conv2D(128, (3, 3), activation='relu'),
-	keras.layers.Flatten(),
-	keras.layers.Dense(128, activation='relu'),
-	keras.layers.Dropout(0.5),
-	keras.layers.Dense(4, activation='softmax') # Output layer for 4 letters
-])
+	seq_lett_model = keras.Sequential([
+        keras.Input(shape=(28, 28, 1)), # Input shape: 28x28 pixels, 1 color channel
+        keras.layers.Conv2D(28, (3, 3), activation='relu'), #(number of layers, dimension of kernel, activation funztion)
+        keras.layers.MaxPooling2D((2, 2)),
+        keras.layers.Conv2D(128, (3, 3), activation='relu'),
+        keras.layers.Dropout(0.5), #used for preventing overfitting
+        keras.layers.MaxPooling2D((2, 2)),
+        keras.layers.Conv2D(128, (3, 3), activation='relu'),
+        keras.layers.Flatten(), #convert a multidimensional input into a one dimensional vector
+        keras.layers.Dense(512, activation='relu'), #al neuros of this layer are connected with al neurons of the previus layer
+        keras.layers.Dropout(0.5),
+        keras.layers.Dense(4, activation='softmax')  # Output layer for 4 letters
+	])
 ```
 
 **Preparazione del dataset**: Prima dell'addestramento è necessario filtrare il dataset ed estrarre solo gli esempi utili al nostro progetto. Questo viene fatto definendo tutte le etichette definite dal dataset EMNIST (`LABELS`), applicare la funzione `filterDataset(X_data, y_data)` che filtra il dataset in base a etichette specifiche ('T', 'B', 'G', 'Y') restituendo un nuovo insieme di dati e relative etichette e infine la funzione `remodulate(y)`, che sostituisce le etichette 'T', 'B', 'Y', 'G' con i valori numerici 0, 1, 2, 3 rispettivamente.
 
 **Addestramento del Modello**: Dopo aver preparato il dataset, è importante normalizzare sia il set di addestramento che quello di test per standardizzare i valori dei pixel delle immagini nell'intervallo (0,1), assicurando che il modello CNN impari senza distorsioni dovute a scale pixel diverse. Successivamente, mediante reshape, le immagini vengono ridimensionate per adattarle al formato richiesto dal modello. Si definisce quindi il batch size, che rappresenta il numero di campioni passati attraverso la rete contemporaneamente durante l'addestramento. Le epoche, invece, indicano quante volte l'intero dataset viene presentato al modello per l'addestramento.
 Il modello CNN viene compilato utilizzando la funzione di perdita `sparse_categorical_crossentropy` (calcola la perdita tra le etichette vere e le previsioni del modello) e l'ottimizzatore `adam`, quindi addestrato utilizzando i dati di addestramento, riservandone una frazione come dati di convalida.
+Viene anche utilizzato il callback `EarlyStopping` per interrompere l'addestramento se la perdita sui dati di convalida smette di diminuire.
 
 ### Valutazione delle Prestazioni del Modello:
 
@@ -200,17 +203,15 @@ Il modello CNN viene compilato utilizzando la funzione di perdita `sparse_catego
 
 ![[metrics.png]]
 
-Viene anche utilizzato il callback `EarlyStopping` per interrompere l'addestramento se la perdita sui dati di convalida smette di diminuire.
-
 **Valutazione del Modello**: Dopo l'addestramento, il modello viene valutato utilizzando i dati di test. Viene calcolata l'accuratezza del modello e vengono generate visualizzazioni della perdita e dell'accuratezza durante l'addestramento, oltre che la matrice di confusione
 
 Esempio di grafici mostrati per la valutazione
-![[Screenshot 2024-03-26 at 11.20.24.png]]
+![[plots.png]]
 Tutti i vari grafici vengono memorizzati nella cartella plots del progetto
 
 ### Acquisizione e Processing delle Immagini:
 
-**Acquisizione dell'Immagine dalla Webcam**: Viene definita una funzione per acquisire un frame dall'input della webcam. Il frame viene quindi restituito in formato PNG.
+**Acquisizione dell'Immagine dalla Webcam**: Viene definita una funzione per acquisire un frame dall'input della webcam. Il frame viene quindi restituito in formato PNG. Si può anche fare l'upload di immagini già fatte.
 
 **Preprocessing dell'Immagine per il Rilevamento delle Griglie**: L'immagine catturata dalla webcam viene preelaborata per il rilevamento delle griglie. Questo include la conversione in scala di grigi, l'applicazione di una sfocatura gaussiana per ridurre il rumore e l'applicazione di una soglia adattiva per creare un'immagine binaria.
 La griglia viene memorizzata nella cartella grids del progetto
@@ -224,26 +225,39 @@ L'immagine rielaborata e i singoli ROIs (celle della griglia) vengono memorizzat
 
 ```python
 def prediction(ROIs, n, seq_lett_model):
-	# Preprocess the ROIs and make predictions
-	l = []
-	for i in range(1, len(ROIs)):
-		im = preprocess_image(f"./manipulated_grids/ROI_{i}.png")
-		if im is not None:
-			prediction = seq_lett_model.predict(im)
-			max = np.where(prediction == np.amax(prediction))
-			l.append(int(max[1][0]))
+    # Preprocess the ROIs and make predictions
+    l = []
+    for i in range(1, len(ROIs)):
+        im = preprocess_image(f"./manipulated_grids/ROI_{i}.png")
+        if im is not None:
+            prediction = seq_lett_model.predict(im)
+            max = np.where(prediction == np.amax(prediction))
+            l.append(int(max[1][0]))
 
-	# Create the grid from the predictions
-	nrow = len(l) // n if n < len(l) else n // len(l)
-	nrow = int(nrow)
+    # Check if T is present in the predictions
+    if 0 not in l:
+        print("T not found in the grid")
+        return None  # Return none as an error
 
-	mat = np.array(list(reversed(l)))
-	if nrow == 1:
-		grid = mat.reshape(nrow, n-1)
-	else:
-		grid = mat.reshape(nrow, n)
+    # Create the grid from the predictions
+    nrow = len(l) // n if n < len(l) else n // len(l)
+    nrow = int(nrow)
 
-	return grid
+    mat = np.array(list(reversed(l)))
+    if nrow == 1:
+        try:
+            grid = mat.reshape(nrow, n-1)
+        except:
+            print("Reshape error")
+            return None
+    else:
+        try:
+            grid = mat.reshape(nrow, n)
+        except:
+            print("Reshape error")
+            return None
+
+    return grid
 ```
 
 ## Ricerca
@@ -255,7 +269,7 @@ Qui sotto si riporta nello specifico il processo di ricerca informata e non info
 
 **Traduzione dei Dati**: Le immagini analizzate vengono tradotte in stati iniziali (`stato_iniziale`) e stati obiettivo (`stato_goal`) secondo la rappresentazione definita per il problema di colorazione uniforme. Questa rappresentazione coinvolge la creazione di un oggetto `State` che tiene traccia della griglia di colori e della posizione corrente del cursore nella griglia.
 
-**Invocazione del Solutore**: Viene invocato il solutore del problema, rappresentato dalla classe `UniformColoring`, utilizzando una tecnica di ricerca informata e almeno una non informata. Le tecniche di ricerca informata includono A\* e Greedy Search, mentre la ricerca non informata è rappresentata dall'Iterative Deepening Search, UCS. Questi algoritmi cercano di trovare una sequenza di azioni ottimali per raggiungere lo stato obiettivo a partire dallo stato iniziale.
+**Invocazione del Solutore**: Viene invocato il solutore del problema, rappresentato dalla classe `UniformColoring`, utilizzando una tecnica di ricerca informata e non informata. Le tecniche di ricerca informata includono A\* e Greedy Search, mentre la ricerca non informata è rappresentata dall'Iterative Deepening Search e UCS. Questi algoritmi cercano di trovare una sequenza di azioni ottimali per raggiungere lo stato obiettivo a partire dallo stato iniziale.
 
 **Produzione della Soluzione**: Se esiste una soluzione, cioè una sequenza di azioni che porta dallo stato iniziale allo stato obiettivo, viene restituita dal solutore. La sequenza di azioni rappresenta le mosse da effettuare sulla griglia per raggiungere lo stato obiettivo.
 
@@ -264,15 +278,15 @@ Esempio di risultato mostrato
 
 ## Introduzione all'Applicazione Web
 
-L'applicazione web sviluppata utilizza Flask come framework per implementare le funzionalità di backend e fornisce un'interfaccia utente intuitiva per risolvere il problema della colorazione uniforme.
+L'applicazione web sviluppata utilizza Flask come framework per implementare le funzionalità di backend e fornisce un'interfaccia utente intuitiva per mostrare il problema della colorazione uniforme.
 
 **Spiegazione del Programma**
-Il paragrafo iniziale dell'applicazione fornisce una descrizione dettagliata del funzionamento del programma e del problema della colorazione uniforme. Viene chiarito l'obiettivo del programma e come esso sia in grado di risolvere il problema attraverso l'utilizzo di algoritmi di ricerca.
+Il paragrafo iniziale dell'applicazione fornisce una descrizione dettagliata del funzionamento del problema della colorazione uniforme. Viene chiarito l'obiettivo del programma e come esso sia in grado di risolvere il problema attraverso l'utilizzo di algoritmi di ricerca.
 
 ![[home.png]]
 
 **Acquisizione e Salvataggio dell'Immagine**
-Nella sezione dedicata all'acquisizione dell'immagine, l'utente può utilizzare la webcam del proprio computer per scattare una foto alla griglia che desidera processare. Una volta catturata l'immagine, è possibile salvarla premendo il pulsante "Save image". L'immagine salvata viene memorizzata su `grids`, una struttura dati utilizzata per conservare lo stato iniziale del problema.
+Nella sezione dedicata all'acquisizione dell'immagine, l'utente può utilizzare la webcam del proprio computer per scattare una foto alla griglia che desidera processare. Una volta catturata l'immagine, è possibile salvarla premendo il pulsante "Save image". L'immagine salvata viene memorizzata su `/grids`, una directory utilizzata per conservare lo stato iniziale del problema. Inoltre è possibile effettuare un upload di immagini da parte dell'utente.
 
 **Elaborazione dell'Immagine**
 Dopo aver salvato l'immagine, l'utente può procedere con la sua elaborazione premendo il pulsante "Process image". Durante questo processo, l'applicazione utilizza gli algoritmi implementati per risolvere il problema di colorazione uniforme. I risultati ottenuti vengono visualizzati successivamente.
@@ -283,7 +297,7 @@ Il pulsante "Train model" avvia la fase di addestramento del modello utilizzato 
 ![[buttons.png]]
 
 **Feedback durante l'Esecuzione**
-Durante l'elaborazione dell'immagine e l'addestramento del modello, l'applicazione fornisce un feedback visivo sotto forma di una barra di avanzamento. Questo permette all'utente di comprendere che il programma è in esecuzione e di monitorare il progresso delle operazioni.
+Durante l'elaborazione dell'immagine e l'addestramento del modello, l'applicazione fornisce un feedback visivo sotto forma di una barra di avanzamento. Questo permette all'utente di comprendere che il programma è in esecuzione.
 
 Alcuni degli output mostrati sugli algoritmi di ricerca
 ![[algoritmi.png]]
@@ -294,8 +308,8 @@ Output mostrato dalla fase di training
 ## Statistiche e Valutazione dei Risultati (da sistemare sulla base degli aggiornamenti sul modello)
 
 **Accuratezza media e perdita in test**
-Nella valutazione dei risultati relativi alla classificazione delle lettere e cifre e all'estrazione degli stati dalle immagini, è stato osservato un'elevata accuratezza nel rilevamento e nell'identificazione delle entità presenti nelle griglie. La classificazione delle lettere e cifre è stata eseguita con un'accuratezza media del 98%, consentendo un'efficace estrazione degli stati necessari per risolvere il problema della colorazione uniforme.
-La funzione di perdita si riduce in un 5%.
+Nella valutazione dei risultati relativi alla classificazione delle lettere e cifre e all'estrazione degli stati dalle immagini, è stato osservato un'elevata accuratezza nel rilevamento e nell'identificazione delle entità presenti nelle griglie. La classificazione delle lettere e cifre è stata eseguita con un'accuratezza media del 98.7%, consentendo un'efficace estrazione degli stati necessari per risolvere il problema della colorazione uniforme.
+La funzione di perdita si riduce in un 3%.
 
 **Report sulle metriche di precision, recall, f-measure e accuracy**
 Per la classe T, la qualità della classificazione può essere considerata buona, poiché la precisione, il recall e l'F1-score sono tutti intorno al 98-99%. Questi valori indicano che il 98-99% delle lettere o cifre classificate come classe T è corretto, mentre il 98-99% delle lettere o cifre appartenenti effettivamente alla classe T è stato identificato correttamente.
@@ -307,8 +321,22 @@ Per la classe Y, la qualità della classificazione può ancora essere considerat
 Anche per la classe G, la qualità della classificazione può essere considerata buona. Precisione, recall e F1-score sono tutti intorno al 98%, indicando che circa il 98% delle lettere o cifre classificate come classe G è corretto e il 98% delle lettere o cifre appartenenti effettivamente alla classe G è stato identificato correttamente.
 
 **Fase di ricerca**
-Per quanto riguarda le prestazioni della ricerca nello spazio degli stati, gli algoritmi implementati hanno dimostrato una buona capacità di risolvere i problemi proposti. In particolare, sono stati risolti con successo la maggior parte dei problemi di colorazione uniforme di dimensioni medie e piccole. Tuttavia, per problemi di dimensioni molto grandi, si è riscontrata una maggiore complessità computazionale e alcuni casi in cui la ricerca non è stata in grado di trovare una soluzione ottimale entro i limiti di tempo prestabiliti (per risolvere il problema è stato imposto un limite di tempo sull'esecuzione delle funzioni), ad esempio nel caso di UCS.
+Per quanto riguarda le prestazioni della ricerca nello spazio degli stati, gli algoritmi implementati hanno dimostrato una buona capacità di risolvere i problemi proposti. In particolare, sono stati risolti con successo la maggior parte dei problemi di colorazione uniforme di dimensioni medie e piccole. Tuttavia, per problemi di dimensioni molto grandi, si è riscontrata una maggiore complessità computazionale e alcuni casi in cui la ricerca non è stata in grado di trovare una soluzione ottimale entro i limiti di tempo prestabiliti (per risolvere il problema è stato imposto un limite di tempo sull'esecuzione delle funzioni), ad esempio nel caso di UCS e IDS.
 
 In generale, l'analisi delle prestazioni degli algoritmi di ricerca ha evidenziato una correlazione tra la dimensione del problema e la complessità computazionale richiesta per la sua risoluzione. Problematiche di dimensioni ridotte sono state risolte in tempi brevi con una buona precisione, mentre problemi di dimensioni maggiori hanno richiesto più tempo e risorse computazionali. Tuttavia, nonostante le sfide incontrate nei problemi di dimensioni più grandi, gli algoritmi hanno dimostrato una buona capacità di approssimazione delle soluzioni anche in questi contesti, consentendo una gestione efficace dei problemi di colorazione uniforme.
 
-**Problemi**
+Per quanto riguarda il costo degli algoritmi utilizzati, sono gli stessi dei costi definiti a lezioni per gli algoritmi utilizzati. Oviiamente il costo in spazio e in tempo variano in base alla dimensione del problema che deve essere risolto, cioè in base alle dimensioni della griglia data in input.
+
+Costo riceca non informata:
+Ricoridiamo che la UCS sia in tempo ein spazio ha un costo di $O(b^{1+\lfloor C^*/\varepsilon\rfloor})$.
+Per IDS in tempo abbiamo $O(b^d)$ ed in spazio$O(b^d)$ $O(bd)$ dove $d$ rappresenta la soluzione più profonda.
+Per quanto riguarda la ricerca non informata è stato notato che la UCS è l'algoritmo che in tempo performa meglio rispetto all'IDS. Il costo delle azioni puo essere migliore di uno o l'altro in base al tipo di griglia fornita
+
+Costo ricerca informata: da questo punto di vista il tempo di esecuzione si è dimostrato minore nella ricerca greedy rispetto ad A\*
+
+**Problema**: La principale sfida riscontrata nel nostro sistema riguarda la corretta lettura delle griglie, soprattutto quelle create manualmente, da parte delle funzioni di processing delle immagini. Questo problema è principalmente causato dalla forma delle linee e dalla spaziatura tra le lettere e i contorni di ogni cella della griglia. C'è da sottolineare il fatto che la webcam del computer come qualsiasi atro strumento di cattura immagine di livello non professionale aggiunge un certo livello di distorsione delle immagini e quindi delle linee della tabella non dritte. Per non parlare dell'ambiente in cui viene scattata l'immagine che se non ci sono delle situazioni ideali si posso creare dei artefatti causati da forti manipolazioni per aumentare la visibilità per il riconoscimento.
+
+**Impatto**: La corretta lettura delle griglie è fondamentale per il corretto funzionamento del nostro sistema, poiché influisce direttamente sulla predizione accurata dei modelli. Quando le griglie non vengono lette correttamente, si verificano errori nella comprensione e nell'analisi dei dati, compromettendo l'affidabilità e l'efficacia delle nostre previsioni e dei nostri risultati.
+
+**Soluzione**: Per mitigare questo problema, è consigliabile utilizzare immagini digitali con bordi precisi e ben definiti, e assicurarsi che le lettere siano centrate all'interno di ciascuna cella della griglia. Inoltre, potrebbe essere utile implementare algoritmi di preprocessing delle immagini per migliorare la qualità delle griglie manuali, come ad esempio la rimozione del rumore, la correzione della distorsione e l'ottimizzazione dei contrasti.
+Per garantire buone performance di risoluzione abbiamo creato delle griglie preimpostate in un documento word la quale possiamo aggiungere o rimuovere lettere che devono avere una dimensione tale da renderle grandi e ben definite nelle celle.
