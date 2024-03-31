@@ -79,9 +79,9 @@ La posizione iniziale della testina, la struttura della griglia e la colorazione
 
 Il file python del progetto è suddiviso in 3 files:
 
-- `_prog-intro-ai.py_`: utilizza OpenCV per integrare la manipolazione delle immagini, l'addestramento del modello e gli algoritmi di ricerca, offrendo un'interfaccia Web per l'interazione mediante l'utilizzo di Flask.
-- `_lettermodel.py_`: utilizza TensorFlow per addestrare un modello di rete neurale convoluzionale (CNN) sull'insieme di dati EMNIST bilanciato, quindi utilizza il modello per classificare regioni di interesse (ROI) estratte dalle immagini tramite manipolazioni di immagini e contorni sfruttando la libreria OpenCV. Inoltre implementa Keras per la costruzione, l'addestramento e la valutazione del modello di deep learning.
-- `_uniformcolring.py_`: definisce una classe di problemi di colorazione uniforme e implementa diversi algoritmi di ricerca non informata e informata (come A\* e ricerca greedy) per risolvere il problema. Si utilizza per determinare la sequenza di azioni che porta al raggiungimento dell'obiettivo, dove ogni cella di una griglia deve essere colorata in modo che tutte le celle adiacenti abbiano colori uguali.
+- `prog-intro-ai.py`: utilizza OpenCV per integrare la manipolazione delle immagini, l'addestramento del modello e gli algoritmi di ricerca, offrendo un'interfaccia Web per l'interazione mediante l'utilizzo di Flask.
+- `lettermodel.py`: utilizza TensorFlow per addestrare un modello di rete neurale convoluzionale (CNN) sull'insieme di dati EMNIST bilanciato, quindi utilizza il modello per classificare regioni di interesse (ROI) estratte dalle immagini tramite manipolazioni di immagini e contorni sfruttando la libreria OpenCV. Inoltre implementa Keras per la costruzione, l'addestramento e la valutazione del modello di deep learning.
+- `uniformcolring.py`: definisce una classe di problemi di colorazione uniforme e implementa diversi algoritmi di ricerca non informata e informata (come A\* e ricerca greedy) per risolvere il problema. Si utilizza per determinare la sequenza di azioni che porta al raggiungimento dell'obiettivo, dove ogni cella di una griglia deve essere colorata in modo che tutte le celle adiacenti abbiano colori uguali.
 
 ## Descrizione del dominio e vincoli
 
@@ -161,10 +161,10 @@ Di seguito si spiegano nel dettagli le parti fondamentali
 ### Euristica utilizzata:
 
 Le euristiche utilizzate sono le seguenti:
-**euristica_color_use_most_present**: Calcola il valore euristico sommando la distanza di Manhattan tra ogni casella non colorata e la posizione attuale, con una penalità aggiuntiva se il colore della casella non è il colore più presente nella griglia.
+**`euristica_color_use_most_present`**: Calcola il valore euristico sommando la distanza di Manhattan tra ogni casella non colorata e la posizione attuale, con una penalità aggiuntiva se il colore della casella non è il colore più presente nella griglia.
 Questa euristica cerca di minimizzare la distanza tra le caselle non colorate e la posizione attuale, preferendo anche i colori più presenti nella griglia per ridurre il numero di caselle non colorate.
 
-**Nearest-kneighbor-distance**: questa funzione euristica viene utilizzata per stimare il costo di raggiungere un obiettivo specifico partendo da un nodo corrente. Utilizza la distanza di Manhattan tra le celle non ancora colorate e il nodo corrente, insieme ad altre informazioni come il costo del movimento, per determinare il valore euristico. Questo valore viene quindi utilizzato dall'algoritmo di ricerca del percorso per guidare la selezione del prossimo nodo da esplorare, con l'obiettivo di ottimizzare il percorso verso l'obiettivo finale.
+**`Nearest-kneighbor-distance`**: questa funzione euristica viene utilizzata per stimare il costo di raggiungere un obiettivo specifico partendo da un nodo corrente. Utilizza la distanza di Manhattan tra le celle non ancora colorate e il nodo corrente, insieme ad altre informazioni come il costo del movimento, per determinare il valore euristico. Questo valore viene quindi utilizzato dall'algoritmo di ricerca del percorso per guidare la selezione del prossimo nodo da esplorare, con l'obiettivo di ottimizzare il percorso verso l'obiettivo finale.
 
 ## Sistema di Rilevamento e Classificazione di Caratteri Alfanumerici Utilizzando Reti Neurali Convoluzionali e OpenCV
 
@@ -287,7 +287,7 @@ Esempio di risultato mostrato
 
 L'applicazione web sviluppata utilizza Flask come framework per implementare le funzionalità di backend e fornisce un'interfaccia utente intuitiva per mostrare il problema della colorazione uniforme.
 
-**Spiegazione del Programma**
+**Spiegazione del Funzionamento**
 Il paragrafo iniziale dell'applicazione fornisce una descrizione dettagliata del funzionamento del problema della colorazione uniforme. Viene chiarito l'obiettivo del programma e come esso sia in grado di risolvere il problema attraverso l'utilizzo di algoritmi di ricerca.
 
 ![[home.png]]
@@ -312,7 +312,7 @@ Alcuni degli output mostrati sugli algoritmi di ricerca
 Output mostrato dalla fase di training
 ![[plots.png]]
 
-## Statistiche e Valutazione dei Risultati (da sistemare sulla base degli aggiornamenti sul modello)
+## Statistiche e Valutazione dei Risultati
 
 **Accuratezza media e perdita in test**
 Nella valutazione dei risultati relativi alla classificazione delle lettere e cifre e all'estrazione degli stati dalle immagini, è stato osservato un'elevata accuratezza nel rilevamento e nell'identificazione delle entità presenti nelle griglie. La classificazione delle lettere e cifre è stata eseguita con un'accuratezza media del 98.7%, consentendo un'efficace estrazione degli stati necessari per risolvere il problema della colorazione uniforme.
@@ -336,14 +336,22 @@ Per quanto riguarda il costo degli algoritmi utilizzati, sono gli stessi dei cos
 
 Costo ricerca non informata:
 Ricordiamo che la UCS sia in tempo e in spazio ha un costo di $O(b^{1+\lfloor C^*/\varepsilon\rfloor})$.
-Per IDS in tempo abbiamo $O(b^d)$ ed in spazio$O(b^d)$ $O(bd)$ dove $d$ rappresenta la soluzione più profonda.
-Per quanto riguarda la ricerca non informata è stato notato che la UCS è l'algoritmo che in tempo performa meglio rispetto all'IDS. Il costo delle azioni puo essere migliore di uno o l'altro in base al tipo di griglia fornita
+Per IDS in tempo abbiamo $O(b^d)$ ed in spazio$O(b^d)$ $O(bd)$ dove $d$ rappresenta la soluzione più profonda. C'è da fare una piccola sottolineatura l'ottimalità non è garantita dato che i costi delle azioni non sono tutti uguali.
+Si è stato notato che la UCS è l'algoritmo che in tempo ha prestazioni migliori rispetto all'IDS. Il costo delle azioni può essere migliore di uno o l'altro in base al tipo di griglia fornita
 
-Costo ricerca informata: da questo punto di vista il tempo di esecuzione si è dimostrato minore nella ricerca greedy rispetto ad A\*
+Costo ricerca informata: 
+Il tempo di esecuzione si è dimostrato minore nella ricerca greedy rispetto ad A\* anche se il costo della soluzione è quasi sempre maggiore o uguale ad A\*.
 
-**Problema**: La principale sfida riscontrata nel nostro sistema riguarda la corretta lettura delle griglie, soprattutto quelle create manualmente, da parte delle funzioni di processing delle immagini. Questo problema è principalmente causato dalla forma delle linee e dalla spaziatura tra le lettere e i contorni di ogni cella della griglia. C'è da sottolineare il fatto che la webcam del computer come qualsiasi atro strumento di cattura immagine di livello non professionale aggiunge un certo livello di distorsione delle immagini e quindi delle linee della tabella non dritte. Per non parlare dell'ambiente in cui viene scattata l'immagine che se non ci sono delle situazioni ideali si posso creare dei artefatti causati da forti manipolazioni per aumentare la visibilità per il riconoscimento.
+**Problema**: La principale sfida riscontrata nel nostro sistema riguarda la corretta lettura delle griglie, soprattutto quelle create manualmente, da parte delle funzioni di processing delle immagini. Questo problema è principalmente causato dalla forma delle linee e dalla spaziatura tra le lettere e i contorni di ogni cella della griglia. C'è da fare una considerazione riguardo la webcam del computer come qualsiasi altro strumento di cattura immagine di livello non professionale aggiunge un certo livello di distorsione delle immagini e quindi delle linee della tabella non dritte. Per non parlare dell'ambiente in cui viene scattata l'immagine che se non ci sono delle situazioni ideali si posso creare dei artefatti amplificati dalle forti manipolazioni per aumentare la visibilità per il riconoscimento dell'immagine.
 
 **Impatto**: La corretta lettura delle griglie è fondamentale per il corretto funzionamento del nostro sistema, poiché influisce direttamente sulla predizione accurata dei modelli. Quando le griglie non vengono lette correttamente, si verificano errori nella comprensione e nell'analisi dei dati, compromettendo l'affidabilità e l'efficacia delle nostre previsioni e dei nostri risultati.
 
-**Soluzione**: Per mitigare questo problema, è consigliabile utilizzare immagini digitali con bordi precisi e ben definiti, e assicurarsi che le lettere siano centrate all'interno di ciascuna cella della griglia. Inoltre, potrebbe essere utile implementare algoritmi di preprocessing delle immagini per migliorare la qualità delle griglie manuali, come ad esempio la rimozione del rumore, la correzione della distorsione e l'ottimizzazione dei contrasti.
+**Soluzione**: Per mitigare questo problema, è consigliabile utilizzare immagini digitali con bordi precisi e ben definiti, e assicurarsi che le lettere siano centrate all'interno di ciascuna cella della griglia. Inoltre, c'è stato il tentativo di implementare algoritmi di pre-processing delle immagini per migliorare la qualità delle griglie manuali, come ad esempio la rimozione del rumore, la correzione della distorsione e l'ottimizzazione dei contrasti.
 Per garantire buone performance di risoluzione abbiamo creato delle griglie preimpostate in un documento word la quale possiamo aggiungere o rimuovere lettere che devono avere una dimensione tale da renderle grandi e ben definite nelle celle.
+
+**Considerazioni finali**
+Per realizzare questo progetto sono state implementate tre tecnologie: il modello di riconoscimento delle lettere, la definizione del problema e gli algoritmi di risoluzione di esso e per finire la creazione di un interfaccia grafica per unire il tutto.
+Il modello ha delle ottime performance ma non è perfetto, tende a scambiare la lettera G con la B e viceversa. Come detto anche sopra gli errori la maggior parte delle volte sono indotti da come viene letta l'immagine da openCV dato che comunque in casi di immagini non chiare e di griglie molto grandi tende a creare aree di interesse in modo non coerente con la griglia data.
+La definizione del problema e gli algoritmi sono anche loro funzionanti nel modo corretto anche se abbiamo dovuto introdurre delle misure di "sicurezza". La limitazione della frontiera ad un numero discreto per evitare attese possibilmente molto lunghe, anche per l'UCS si è fatta praticamente la stessa cosa. Le euristiche implementate sono molto buone e garantiscono delle performance per la ricerca informata eccelse.
+L'interfaccia grafica permette di avere una visualizzazione più intuitiva e accessibile da qualsiasi browser.
+
