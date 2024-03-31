@@ -11,12 +11,19 @@
 Anno accademico 2023/2024
 Inserire indice
 
+## Indice
+- [[#Prefazione|Prefazione]]
+- [[#Progetto Uniform coloring|Progetto Uniform coloring]]
+- [[#Descrizione del dominio e vincoli|Descrizione del dominio e vincoli]]
+- [[#Classi utilizzate per la ricerca nello spazio, la classe problem e le sue componenti|Classi utilizzate per la ricerca nello spazio, la classe problem e le sue componenti]]
+- [[#Sistema di Rilevamento e Classificazione di Caratteri Alfanumerici Utilizzando Reti Neurali Convoluzionali e OpenCV|Sistema di Rilevamento e Classificazione di Caratteri Alfanumerici Utilizzando Reti Neurali Convoluzionali e OpenCV]]
+- [[#Ricerca|Ricerca]]
+- [[#Introduzione all'Applicazione Web|Introduzione all'Applicazione Web]]
+- [[#Statistiche e Valutazione dei Risultati (da sistemare sulla base degli aggiornamenti sul modello)|Statistiche e Valutazione dei Risultati (da sistemare sulla base degli aggiornamenti sul modello)]]
 ## Prefazione
-
 Il progetto consiste nella realizzazione di una applicazione di Intelligenza Artificiale completa degli aspetti di gestione di: sensori per l’acquisizione dei dati dall’esterno relativi a stati e obiettivi, ragionamento/ricerca della soluzione per i goal acquisiti, esecutori per la realizzazione delle azioni che conducono alla soluzione.
 
 ## Progetto Uniform coloring
-
 Uniform Coloring è un dominio in cui si hanno a disposizione alcune celle da colorare, e vari colori a disposizione.
 
 Per semplicità immaginiamo una griglia rettangolare in cui è possibile spostare una testina colorante fra le celle attigue secondo le 4 direzioni cardinali (N,S,E,W), senza uscire dalla griglia.
@@ -175,7 +182,7 @@ Questa euristica cerca di minimizzare la distanza tra le caselle non colorate e 
         keras.layers.MaxPooling2D((2, 2)),
         keras.layers.Conv2D(128, (3, 3), activation='relu'),
         keras.layers.Flatten(), #convert a multidimensional input into a one dimensional vector
-        keras.layers.Dense(512, activation='relu'), #al neuros of this layer are connected with al neurons of the previus layer
+        keras.layers.Dense(512, activation='relu'), #al neurons of this layer are connected with al neurons of the previus layer
         keras.layers.Dropout(0.5),
         keras.layers.Dense(4, activation='softmax')  # Output layer for 4 letters
 	])
@@ -196,7 +203,7 @@ Viene anche utilizzato il callback `EarlyStopping` per interrompere l'addestrame
 - _Recall (Recall)_: Misura la proporzione di istanze positive correttamente predette tra tutte le istanze positive effettive.
   Formula: Richiamo = TP / (TP + FN), dove TP sono i veri positivi e FN sono i falsi negativi.
 - _F1-Score_: È la media armonica di precisione e richiamo e fornisce un'unica misura del modello.
-  Formula: F1-Score = 2 _ (Precisione _ Richiamo) / (Precisione + Richiamo)
+  Formula: F1-Score = 2 x (Precisione x Richiamo) / (Precisione + Richiamo)
 - _Accuratezza (Accuracy)_: Misura la frazione di predizioni corrette rispetto al totale delle predizioni.
   Formula: Accuratezza = (TP + TN) / (TP + TN + FP + FN), dove TP sono i veri positivi, TN sono i veri negativi, FP sono i falsi positivi e FN sono i falsi negativi.
 - _Perdita (Loss)_: La perdita è una misura dell'errore tra le predizioni del modello e le etichette vere. L'obiettivo durante l'addestramento è minimizzare questa perdita.
@@ -325,10 +332,10 @@ Per quanto riguarda le prestazioni della ricerca nello spazio degli stati, gli a
 
 In generale, l'analisi delle prestazioni degli algoritmi di ricerca ha evidenziato una correlazione tra la dimensione del problema e la complessità computazionale richiesta per la sua risoluzione. Problematiche di dimensioni ridotte sono state risolte in tempi brevi con una buona precisione, mentre problemi di dimensioni maggiori hanno richiesto più tempo e risorse computazionali. Tuttavia, nonostante le sfide incontrate nei problemi di dimensioni più grandi, gli algoritmi hanno dimostrato una buona capacità di approssimazione delle soluzioni anche in questi contesti, consentendo una gestione efficace dei problemi di colorazione uniforme.
 
-Per quanto riguarda il costo degli algoritmi utilizzati, sono gli stessi dei costi definiti a lezioni per gli algoritmi utilizzati. Oviiamente il costo in spazio e in tempo variano in base alla dimensione del problema che deve essere risolto, cioè in base alle dimensioni della griglia data in input.
+Per quanto riguarda il costo degli algoritmi utilizzati, sono gli stessi dei costi definiti a lezioni per gli algoritmi utilizzati. Ovviamente il costo in spazio e in tempo variano in base alla dimensione del problema che deve essere risolto, cioè in base alle dimensioni della griglia data in input.
 
-Costo riceca non informata:
-Ricoridiamo che la UCS sia in tempo ein spazio ha un costo di $O(b^{1+\lfloor C^*/\varepsilon\rfloor})$.
+Costo ricerca non informata:
+Ricordiamo che la UCS sia in tempo e in spazio ha un costo di $O(b^{1+\lfloor C^*/\varepsilon\rfloor})$.
 Per IDS in tempo abbiamo $O(b^d)$ ed in spazio$O(b^d)$ $O(bd)$ dove $d$ rappresenta la soluzione più profonda.
 Per quanto riguarda la ricerca non informata è stato notato che la UCS è l'algoritmo che in tempo performa meglio rispetto all'IDS. Il costo delle azioni puo essere migliore di uno o l'altro in base al tipo di griglia fornita
 
