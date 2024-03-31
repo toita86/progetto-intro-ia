@@ -401,6 +401,7 @@ def prediction(ROIs, n, seq_lett_model):
     nrow = len(l) // n if n < len(l) else n // len(l)
     nrow = int(nrow)
 
+    # Convert the list to a matrix
     mat = np.array(list(reversed(l)))
     if nrow == 1:
         try:
